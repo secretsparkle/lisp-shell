@@ -1,18 +1,41 @@
 package main
 
 import (
+	"./functions"
 	"./parse"
+	"./structs"
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
-	"os/exec"
-	"strconv"
 	"strings"
 )
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
+	symbols := map[string]rune{
+		"if":      'c',
+		"cond":    'c',
+		"defvar":  'f',
+		"defun":   'f',
+		"+":       'f',
+		"-":       'f',
+		"*":       'f',
+		"/":       'f',
+		"quote":   'f',
+		"cons":    'f',
+		"car":     'f',
+		"cdr":     'f',
+		"first":   'f',
+		"rest":    'f',
+		"last":    'f',
+		"reverse": 'f',
+	}
+
+	functions := make(map[string]structs.Function)
+	//strings := make(map[string]string)
+	//numbers := make(map[string]float64)
+	//bools := make(map[string]bool)
+
 	for {
 		fmt.Print("> ")
 		// Read the keyboard input
@@ -26,13 +49,14 @@ func main() {
 		}
 
 		// Handle the execution of the input.
-		if err = execInput(input); err != nil {
+		if err = execInput(input, &symbols, &functions); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 	}
 }
 
-func execInput(input string) error {
+func execInput(input string, symbols *map[string]rune,
+	functionTable *map[string]structs.Function) error {
 
 	// Remove the leading parentheses
 	input = strings.TrimPrefix(input, "(")
@@ -44,96 +68,11 @@ func execInput(input string) error {
 	args := strings.Split(input, " ")
 
 	// Check for built-in commands
-	switch args[0] {
-	case "+":
-		if len(args) == 1 {
-			return errors.New("Invalid number of arguments.")
-		}
-		sum := 0.0
-		for _, number := range args[1:] {
-			if n, err := strconv.ParseFloat(number, 64); err == nil {
-				sum += n
-			} else {
-				return errors.New("Only numbers can be added.")
-			}
-		}
-		fmt.Println(sum)
+	switch (*symbols)[args[0]] {
+	case 'c':
 		return nil
-	case "-":
-		if len(args) == 1 {
-			return errors.New("Invalid number of arguments.")
-		} else if len(args) == 2 {
-			difference, err := strconv.ParseFloat(args[1], 64)
-			if err != nil {
-				return errors.New("Only numbers can be subtracted.")
-			}
-			difference = 0 - difference
-			fmt.Println(difference)
-			return nil
-		} else {
-			difference, err := strconv.ParseFloat(args[1], 64)
-			if err != nil {
-				return errors.New("Only numbers can be subtracted.")
-			}
-			for _, number := range args[2:] {
-				if n, err := strconv.ParseFloat(number, 64); err == nil {
-					difference -= n
-				} else {
-					return errors.New("Only numbers can be subtracted.")
-				}
-			}
-			fmt.Println(difference)
-			return nil
-		}
-	case "*":
-		if len(args) == 1 {
-			return errors.New("Invalid number of arguments.")
-		}
-		product := 1.0
-		for _, number := range args[1:] {
-			if n, err := strconv.ParseFloat(number, 64); err == nil {
-				product *= n
-			} else {
-				return errors.New("Only numbers can be multiplied.")
-			}
-		}
-		fmt.Println(product)
-		return nil
-	case "/":
-		if len(args) < 3 {
-			return errors.New("Invalid number of arguments.")
-		}
-		numerator, err := strconv.ParseFloat(args[1], 64)
-		if err != nil {
-			return errors.New("Only numbers can be divided.")
-		}
-		for _, number := range args[2:] {
-			if n, err := strconv.ParseFloat(number, 64); err == nil {
-				numerator /= n
-			} else {
-				return errors.New("Only numbers can be divided.")
-			}
-		}
-		fmt.Println(numerator)
-		return nil
-	case "cd":
-		// 'cd' to home dir with empty path not yet supported.
-		if len(args) < 2 {
-			return errors.New("path required")
-		}
-		// Change the directory and return the error.
-		return os.Chdir(args[1])
-	case "exit":
-		os.Exit(0)
+	case 'f':
+		return functions.ExecFunction(args, symbols, functionTable, nil)
 	}
-
-	// Pass the program and the arguments separately.
-	cmd := exec.Command(args[0], args[1:]...)
-
-	// Set the correct output device.
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-
-	// Execute the command
-	return cmd.Run()
+	return nil
 }

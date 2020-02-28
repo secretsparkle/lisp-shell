@@ -66,22 +66,23 @@ func sExpression(tokens []string) bool {
 func list(tokens []string) bool {
 	fmt.Println("list")
 	fmt.Println(tokens)
+	var stack []string
+
 	if tokens[0] != "(" {
 		return false
 	}
+	stack = append(stack, "(")
 	tokens = tokens[1:]
-	if !sExpression(tokens) {
-		return false
-	}
-	tokens = tokens[1:]
-	for range tokens[:len(tokens)-1] {
-		if !sExpression(tokens) {
+	for range tokens {
+		fmt.Println(stack)
+		if tokens[0] == ")" && len(stack) > 0 {
+			stack = stack[1:]
+		} else if tokens[0] == ")" && len(stack) == 0 {
+			break
+		} else if !sExpression(tokens) {
 			return false
 		}
 		tokens = tokens[1:]
-	}
-	if tokens[0] != ")" {
-		return false
 	}
 	return true
 }
