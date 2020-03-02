@@ -11,113 +11,56 @@ import (
 )
 
 func ExecFunction(args []string, symbols *map[string]rune,
-	// need to put nuew functions in the symbol table and the functions table
 	functions *map[string]structs.Function, bindings map[string]string) error {
 	fmt.Println("ExecFunction")
 	fmt.Println(args)
 	switch args[0] {
 	case "defun":
-		newFunction := new(structs.Function)
-		newFunction.Name = args[1]
-		fmt.Println(newFunction.Name)
-		i := 2
-		for {
-			fmt.Println("args[i]: " + args[i])
-			if strings.Contains(args[i], "(") {
-				args[i] = strings.Trim(args[i], "(")
-			}
-			if strings.Contains(args[i], ")") {
-				args[i] = strings.Trim(args[i], ")")
-				newFunction.Args = append(newFunction.Args, args[i])
-				fmt.Println(newFunction.Args)
-				i++
-				break
-			}
-			newFunction.Args = append(newFunction.Args, args[i])
-			i++
-		}
-		for ; i < len(args); i++ {
-			newFunction.Body = append(newFunction.Body, args[i])
-			fmt.Println(newFunction.Body)
-		}
-		(*symbols)[newFunction.Name] = 'f'
-		(*functions)[newFunction.Name] = *newFunction
-		return nil
+		return defun(args, symbols, functions)
 	case "cons":
 	case "+":
-		if len(args) == 1 {
-			return errors.New("Invalid number of arguments.")
-		}
-		sum := 0.0
-		for _, number := range args[1:] {
-			if bindings != nil {
-				number = bindings[number]
-			}
-			if n, err := strconv.ParseFloat(number, 64); err == nil {
-				sum += n
-			} else {
-				return errors.New("Only numbers can be added.")
-			}
-		}
-		fmt.Println(sum)
-		return nil
+		return plus(args, bindings)
 	case "-":
-		if len(args) == 1 {
-			return errors.New("Invalid number of arguments.")
-		} else if len(args) == 2 {
-			difference, err := strconv.ParseFloat(args[1], 64)
-			if err != nil {
-				return errors.New("Only numbers can be subtracted.")
-			}
-			difference = 0 - difference
-			fmt.Println(difference)
-			return nil
-		} else {
-			difference, err := strconv.ParseFloat(args[1], 64)
-			if err != nil {
-				return errors.New("Only numbers can be subtracted.")
-			}
-			for _, number := range args[2:] {
-				if n, err := strconv.ParseFloat(number, 64); err == nil {
-					difference -= n
-				} else {
-					return errors.New("Only numbers can be subtracted.")
-				}
-			}
-			fmt.Println(difference)
-			return nil
-		}
+		return minus(args, bindings)
 	case "*":
-		if len(args) == 1 {
-			return errors.New("Invalid number of arguments.")
-		}
-		product := 1.0
-		for _, number := range args[1:] {
-			if n, err := strconv.ParseFloat(number, 64); err == nil {
-				product *= n
-			} else {
-				return errors.New("Only numbers can be multiplied.")
-			}
-		}
-		fmt.Println(product)
-		return nil
-	case "/":
-		if len(args) < 3 {
-			return errors.New("Invalid number of arguments.")
-		}
-		numerator, err := strconv.ParseFloat(args[1], 64)
+		return times(args, bindings)
+	/*case "/":
+	var numerator float64
+	var number string
+	if len(args) < 3 {
+		return errors.New("Invalid number of arguments.")
+	}
+	if bindings != nil {
+		numer, err := strconv.ParseFloat(bindings[args[1]], 64)
 		if err != nil {
 			return errors.New("Only numbers can be divided.")
 		}
-		for _, number := range args[2:] {
-			if n, err := strconv.ParseFloat(number, 64); err == nil {
-				numerator /= n
+	} else {
+		numer, err := strconv.ParseFloat(args[1], 64)
+		if err != nil {
+			return errors.New("Only numbers can be divided.")
+		}
+	}
+	numerator = numer
+	for _, number := range args[2:] {
+		if bindings != nil {
+			number = bindings[number]
+			if num, err := strconv.ParseFloat(number, 64); err == nil {
+				numerator /= num
+			} else {
+				return errors.New("Only numbers can be divided.")
+			}
+		} else {
+			if num, err := strconv.ParseFloat(number, 64); err == nil {
+				numerator /= num
 			} else {
 				return errors.New("Only numbers can be divided.")
 			}
 		}
-		fmt.Println(numerator)
-		return nil
+	}
+	fmt.Println(numerator)
+	return nil
+	*/
 	case "cd":
 		// 'cd' to home dir with empty path not yet supported.
 		if len(args) < 2 {
@@ -151,4 +94,123 @@ func ExecFunction(args []string, symbols *map[string]rune,
 
 	// Execute the command
 	return cmd.Run()
+}
+
+func defun(args []string, symbols *map[string]rune,
+	functions *map[string]structs.Function) error {
+	newFunction := new(structs.Function)
+	newFunction.Name = args[1]
+	fmt.Println(newFunction.Name)
+	i := 2
+	for {
+		fmt.Println("args[i]: " + args[i])
+		if strings.Contains(args[i], "(") {
+			args[i] = strings.Trim(args[i], "(")
+		}
+		if strings.Contains(args[i], ")") {
+			args[i] = strings.Trim(args[i], ")")
+			newFunction.Args = append(newFunction.Args, args[i])
+			fmt.Println(newFunction.Args)
+			i++
+			break
+		}
+		newFunction.Args = append(newFunction.Args, args[i])
+		i++
+	}
+	for ; i < len(args); i++ {
+		newFunction.Body = append(newFunction.Body, args[i])
+		fmt.Println(newFunction.Body)
+	}
+	(*symbols)[newFunction.Name] = 'f'
+	(*functions)[newFunction.Name] = *newFunction
+	return nil
+}
+
+func plus(args []string, bindings map[string]string) error {
+	if len(args) == 1 {
+		return errors.New("Invalid number of arguments.")
+	}
+	sum := 0.0
+	for _, number := range args[1:] {
+		if bindings != nil {
+			number = bindings[number]
+		}
+		if n, err := strconv.ParseFloat(number, 64); err == nil {
+			sum += n
+		} else {
+			return errors.New("Only numbers can be added.")
+		}
+	}
+	fmt.Println(sum)
+	return nil
+}
+
+func minus(args []string, bindings map[string]string) error {
+	var number string
+	if len(args) == 1 {
+		return errors.New("Invalid number of arguments.")
+	} else if len(args) == 2 {
+		if bindings != nil {
+			number = bindings[args[1]]
+		}
+		difference, err := strconv.ParseFloat(number, 64)
+		if err != nil {
+			return errors.New("Only numbers can be subtracted.")
+		}
+		difference = 0 - difference
+		fmt.Println(difference)
+		return nil
+	} else {
+		if bindings != nil {
+			number = bindings[args[1]]
+		}
+		difference, err := strconv.ParseFloat(number, 64)
+		if err != nil {
+			return errors.New("Only numbers can be subtracted.")
+		}
+		for _, value := range args[2:] {
+			if bindings != nil {
+				number = bindings[value]
+				if num, err := strconv.ParseFloat(number, 64); err == nil {
+					difference -= num
+				} else {
+					return errors.New("Only numbers can be subtracted.")
+				}
+			} else {
+				if num, err := strconv.ParseFloat(value, 64); err == nil {
+					difference -= num
+				} else {
+					return errors.New("Only numbers can be subtracted.")
+				}
+			}
+		}
+		fmt.Println(difference)
+		return nil
+	}
+}
+
+func times(args []string, bindings map[string]string) error {
+	if len(args) == 1 {
+		return errors.New("Invalid number of arguments.")
+	}
+	product := 1.0
+	var number string
+	for _, value := range args[1:] {
+		if bindings != nil {
+			number = bindings[value]
+			if num, err := strconv.ParseFloat(number, 64); err == nil {
+				product *= num
+			} else {
+				return errors.New("Only numbers can be multiplied.")
+			}
+		} else {
+			if num, err := strconv.ParseFloat(value, 64); err == nil {
+				product *= num
+			} else {
+				return errors.New("Only numbers can be multiplied.")
+			}
+		}
+	}
+	fmt.Println(product)
+	return nil
 }
