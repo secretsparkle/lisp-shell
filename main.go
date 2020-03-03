@@ -60,7 +60,7 @@ func execInput(input string, symbols *map[string]rune,
 	functionTable *map[string]structs.Function) error {
 
 	// Remove the leading parentheses
-	input = strings.TrimPrefix(input, "(")
+	input = strings.Replace(input, "(", " ", 1)
 
 	// Remove the trailing parenthese and newline character.
 	input = strings.TrimSuffix(input, ")\n")
@@ -77,5 +77,4 @@ func execInput(input string, symbols *map[string]rune,
 	default:
 		return functions.ExecFunction(args, symbols, functionTable, nil)
 	}
-	return nil
 }

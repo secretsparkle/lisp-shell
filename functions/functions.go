@@ -15,9 +15,21 @@ func ExecFunction(args []string, symbols *map[string]rune,
 	fmt.Println("ExecFunction")
 	fmt.Println(args)
 	switch args[0] {
+	case "'":
+		return list(args)
+	case "car":
+	case "cdr":
+	case "cons":
 	case "defun":
 		return defun(args, symbols, functions)
-	case "cons":
+	case "defvar":
+	case "first":
+	case "last":
+	case "list":
+		return list(args)
+	case "quote":
+	case "rest":
+	case "reverse":
 	case "+":
 		return plus(args, bindings)
 	case "-":
@@ -28,7 +40,6 @@ func ExecFunction(args []string, symbols *map[string]rune,
 		return divide(args, bindings)
 	case "cd":
 		// 'cd' to home dir with empty path not yet supported.
-		fmt.Println("In CD!")
 		if len(args) < 2 {
 			return errors.New("path required")
 		}
@@ -63,6 +74,24 @@ func ExecFunction(args []string, symbols *map[string]rune,
 			return cmd.Run()
 		}
 	}
+	return nil
+}
+
+func list(args []string) error {
+	newList := "("
+
+	for index, token := range args {
+		if strings.Contains("list", token) || strings.Contains("'", token) {
+			continue
+		} else if index == len(args)-1 {
+			newList += token
+		} else {
+			newList += token
+			newList += " "
+		}
+	}
+	newList += ")"
+	fmt.Println(newList)
 	return nil
 }
 
