@@ -24,45 +24,11 @@ func ExecFunction(args []string, symbols *map[string]rune,
 		return minus(args, bindings)
 	case "*":
 		return times(args, bindings)
-	/*case "/":
-	var numerator float64
-	var number string
-	if len(args) < 3 {
-		return errors.New("Invalid number of arguments.")
-	}
-	if bindings != nil {
-		numer, err := strconv.ParseFloat(bindings[args[1]], 64)
-		if err != nil {
-			return errors.New("Only numbers can be divided.")
-		}
-	} else {
-		numer, err := strconv.ParseFloat(args[1], 64)
-		if err != nil {
-			return errors.New("Only numbers can be divided.")
-		}
-	}
-	numerator = numer
-	for _, number := range args[2:] {
-		if bindings != nil {
-			number = bindings[number]
-			if num, err := strconv.ParseFloat(number, 64); err == nil {
-				numerator /= num
-			} else {
-				return errors.New("Only numbers can be divided.")
-			}
-		} else {
-			if num, err := strconv.ParseFloat(number, 64); err == nil {
-				numerator /= num
-			} else {
-				return errors.New("Only numbers can be divided.")
-			}
-		}
-	}
-	fmt.Println(numerator)
-	return nil
-	*/
+	case "/":
+		return divide(args, bindings)
 	case "cd":
 		// 'cd' to home dir with empty path not yet supported.
+		fmt.Println("In CD!")
 		if len(args) < 2 {
 			return errors.New("path required")
 		}
@@ -72,28 +38,32 @@ func ExecFunction(args []string, symbols *map[string]rune,
 		os.Exit(0)
 	default:
 		function := (*functions)[args[0]]
-		body := function.Body
-		function.Bindings = make(map[string]string)
-		body[0] = strings.TrimPrefix(body[0], "(")
-		body[len(body)-1] = strings.TrimSuffix(body[len(body)-1], ")")
-		index := 1
-		for _, arg := range function.Args {
-			function.Bindings[arg] = strings.Trim(args[index], "()")
-			index++
+		if function.Name != "" { // User defined function
+			fmt.Println("Here!")
+			body := function.Body
+			function.Bindings = make(map[string]string)
+			body[0] = strings.TrimPrefix(body[0], "(")
+			body[len(body)-1] = strings.TrimSuffix(body[len(body)-1], ")")
+			index := 1
+			for _, arg := range function.Args {
+				function.Bindings[arg] = strings.Trim(args[index], "()")
+				index++
+			}
+			ExecFunction(body, symbols, functions, function.Bindings)
+			return nil
+		} else { // UNIX command
+			// Pass the program and the arguments separately
+			cmd := exec.Command(args[0], args[1:]...)
+
+			//Set the correct output device.
+			cmd.Stderr = os.Stderr
+			cmd.Stdout = os.Stdout
+
+			// Execute the command
+			return cmd.Run()
 		}
-		ExecFunction(body, symbols, functions, function.Bindings)
-		return nil
 	}
-
-	// Pass the program and the arguments separately
-	cmd := exec.Command(args[0], args[1:]...)
-
-	//Set the correct output device.
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-
-	// Execute the command
-	return cmd.Run()
+	return nil
 }
 
 func defun(args []string, symbols *map[string]rune,
@@ -135,8 +105,8 @@ func plus(args []string, bindings map[string]string) error {
 		if bindings != nil {
 			number = bindings[number]
 		}
-		if n, err := strconv.ParseFloat(number, 64); err == nil {
-			sum += n
+		if num, err := strconv.ParseFloat(number, 64); err == nil {
+			sum += num
 		} else {
 			return errors.New("Only numbers can be added.")
 		}
@@ -147,6 +117,7 @@ func plus(args []string, bindings map[string]string) error {
 
 func minus(args []string, bindings map[string]string) error {
 	var number string
+
 	if len(args) == 1 {
 		return errors.New("Invalid number of arguments.")
 	} else if len(args) == 2 {
@@ -164,7 +135,7 @@ func minus(args []string, bindings map[string]string) error {
 		if bindings != nil {
 			number = bindings[args[1]]
 		}
-		difference, err := strconv.ParseFloat(number, 64)
+		difference, err := strconv.ParseFloat(args[1], 64)
 		if err != nil {
 			return errors.New("Only numbers can be subtracted.")
 		}
@@ -212,5 +183,44 @@ func times(args []string, bindings map[string]string) error {
 		}
 	}
 	fmt.Println(product)
+	return nil
+}
+
+func divide(args []string, bindings map[string]string) error {
+	var numer, numerator float64
+	var err error
+
+	if len(args) < 3 {
+		return errors.New("Invalid number of arguments.")
+	}
+	if bindings != nil {
+		numer, err = strconv.ParseFloat(bindings[args[1]], 64)
+		if err != nil {
+			return errors.New("Only numbers can be divided.")
+		}
+	} else {
+		numer, err = strconv.ParseFloat(args[1], 64)
+		if err != nil {
+			return errors.New("Only numbers can be divided.")
+		}
+	}
+	numerator = numer
+	for _, number := range args[2:] {
+		if bindings != nil {
+			number = bindings[number]
+			if num, err := strconv.ParseFloat(number, 64); err == nil {
+				numerator /= num
+			} else {
+				return errors.New("Only numbers can be divided.")
+			}
+		} else {
+			if num, err := strconv.ParseFloat(number, 64); err == nil {
+				numerator /= num
+			} else {
+				return errors.New("Only numbers can be divided.")
+			}
+		}
+	}
+	fmt.Println(numerator)
 	return nil
 }

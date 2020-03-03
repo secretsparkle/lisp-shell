@@ -48,6 +48,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 		}
 
+		fmt.Println("Valid s-expression")
 		// Handle the execution of the input.
 		if err = execInput(input, &symbols, &functions); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -72,6 +73,8 @@ func execInput(input string, symbols *map[string]rune,
 	case 'c':
 		return nil
 	case 'f':
+		return functions.ExecFunction(args, symbols, functionTable, nil)
+	default:
 		return functions.ExecFunction(args, symbols, functionTable, nil)
 	}
 	return nil
