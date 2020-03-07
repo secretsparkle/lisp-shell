@@ -44,6 +44,10 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 		}
 
+		var new structs.SExpression
+		args := strings.Split(input, " ")
+		_, new = convertInput(new, args)
+
 		if err = parse.Parse(input); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
@@ -56,11 +60,57 @@ func main() {
 	}
 }
 
+func convertInput(new structs.SExpression, args []string) (int, structs.SExpression) {
+	expressionCounter := 0
+	catchUpIndex := 0
+	currIndex := 0
+
+	for index, arg := range args {
+		currIndex = index
+		if catchUpIndex > 0 {
+			catchUpIndex--
+			continue
+		}
+		if strings.Contains(arg, ")\n") {
+			new.SExpression = append(new.SExpression, arg[:len(arg)-2])
+			break
+		} else if strings.Contains(arg, ")") {
+			new.SExpression = append(new.SExpression, arg[:len(arg)-1])
+			break
+		} else if strings.Contains(arg, "'(") && expressionCounter == 0 { // beginning of an s-expression
+			new.Data = true
+			new.SExpression = append(new.SExpression, arg[2:])
+			expressionCounter++
+		} else if strings.Contains(arg, "(") && expressionCounter == 0 { // beginning of an s-expression
+			new.SExpression = append(new.SExpression, arg[1:])
+			expressionCounter++
+		} else if strings.Contains(arg, "'(") && expressionCounter > 0 {
+			var newIndex int
+			var inner structs.SExpression
+			inner.Data = true
+			newIndex, inner = convertInput(inner, args[index:])
+			catchUpIndex = newIndex
+			new.SExpression = append(new.SExpression, inner)
+		} else if strings.Contains(arg, "(") && expressionCounter > 0 {
+			var newIndex int
+			var inner structs.SExpression
+			newIndex, inner = convertInput(inner, args[index:])
+			catchUpIndex = newIndex
+			new.SExpression = append(new.SExpression, inner)
+		} else {
+			new.SExpression = append(new.SExpression, arg)
+		}
+	}
+	fmt.Println("Settled Input: ", new.SExpression)
+	return currIndex, new
+}
+
 func execInput(input string, symbols *map[string]rune,
 	functionTable *map[string]structs.Function) error {
 
 	// Remove the leading parentheses
-	input = strings.Replace(input, "(", " ", 1)
+	// space works for some, not all
+	input = strings.Replace(input, "(", "", 1)
 
 	// Remove the trailing parenthese and newline character.
 	input = strings.TrimSuffix(input, ")\n")

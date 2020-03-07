@@ -11,3 +11,8 @@ type Function struct {
 	Bindings map[string]string
 	Body     []string
 }
+
+type SExpression struct {
+	Data        bool
+	SExpression []interface{}
+}

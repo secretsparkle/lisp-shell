@@ -85,6 +85,8 @@ func list(args []string) error {
 			continue
 		} else if index == len(args)-1 {
 			newList += token
+		} else if strings.Contains("(", token) {
+
 		} else {
 			newList += token
 			newList += " "
