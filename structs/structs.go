@@ -9,7 +9,7 @@ type Function struct {
 	Name     string
 	Args     []string
 	Bindings map[string]string
-	Body     []string
+	Body     SExpression
 }
 
 type SExpression struct {

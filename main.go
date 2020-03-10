@@ -54,7 +54,7 @@ func main() {
 
 		fmt.Println("Valid s-expression")
 		// Handle the execution of the input.
-		if err = execInput(input, &symbols, &functions); err != nil {
+		if err = execInput(new, &symbols, &functions); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 	}
@@ -72,10 +72,18 @@ func convertInput(new structs.SExpression, args []string) (int, structs.SExpress
 			continue
 		}
 		if strings.Contains(arg, ")\n") {
-			new.SExpression = append(new.SExpression, arg[:len(arg)-2])
+			if strings.Contains(arg, "(") {
+				new.SExpression = append(new.SExpression, arg[1:len(arg)-2])
+			} else {
+				new.SExpression = append(new.SExpression, arg[:len(arg)-2])
+			}
 			break
 		} else if strings.Contains(arg, ")") {
-			new.SExpression = append(new.SExpression, arg[:len(arg)-1])
+			if strings.Contains(arg, "(") {
+				new.SExpression = append(new.SExpression, arg[1:len(arg)-1])
+			} else {
+				new.SExpression = append(new.SExpression, arg[:len(arg)-1])
+			}
 			break
 		} else if strings.Contains(arg, "'(") && expressionCounter == 0 { // beginning of an s-expression
 			new.Data = true
@@ -90,13 +98,13 @@ func convertInput(new structs.SExpression, args []string) (int, structs.SExpress
 			inner.Data = true
 			newIndex, inner = convertInput(inner, args[index:])
 			catchUpIndex = newIndex
-			new.SExpression = append(new.SExpression, inner)
+			new.SExpression = append(new.SExpression, inner.SExpression)
 		} else if strings.Contains(arg, "(") && expressionCounter > 0 {
 			var newIndex int
 			var inner structs.SExpression
 			newIndex, inner = convertInput(inner, args[index:])
 			catchUpIndex = newIndex
-			new.SExpression = append(new.SExpression, inner)
+			new.SExpression = append(new.SExpression, inner.SExpression)
 		} else {
 			new.SExpression = append(new.SExpression, arg)
 		}
@@ -105,26 +113,17 @@ func convertInput(new structs.SExpression, args []string) (int, structs.SExpress
 	return currIndex, new
 }
 
-func execInput(input string, symbols *map[string]rune,
+func execInput(new structs.SExpression, symbols *map[string]rune,
 	functionTable *map[string]structs.Function) error {
 
-	// Remove the leading parentheses
-	// space works for some, not all
-	input = strings.Replace(input, "(", "", 1)
-
-	// Remove the trailing parenthese and newline character.
-	input = strings.TrimSuffix(input, ")\n")
-
-	// Split the input to separate the command and the arguments.
-	args := strings.Split(input, " ")
-
+	//function := new.SExpression[0].(string)
 	// Check for built-in commands
-	switch (*symbols)[args[0]] {
+	switch (*symbols)[new.SExpression[0].(string)] {
 	case 'c':
 		return nil
 	case 'f':
-		return functions.ExecFunction(args, symbols, functionTable, nil)
+		return functions.ExecFunction(new, symbols, functionTable, nil)
 	default:
-		return functions.ExecFunction(args, symbols, functionTable, nil)
+		return functions.ExecFunction(new, symbols, functionTable, nil)
 	}
 }
