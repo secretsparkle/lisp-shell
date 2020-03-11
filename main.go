@@ -54,7 +54,7 @@ func main() {
 
 		fmt.Println("Valid s-expression")
 		// Handle the execution of the input.
-		if err = execInput(new, &symbols, &functions); err != nil {
+		if new, err = execInput(new, &symbols, &functions); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 	}
@@ -73,16 +73,16 @@ func convertInput(new structs.SExpression, args []string) (int, structs.SExpress
 		}
 		if strings.Contains(arg, ")\n") {
 			if strings.Contains(arg, "(") {
-				new.SExpression = append(new.SExpression, arg[1:len(arg)-2])
+				new.SExpression = append(new.SExpression, strings.TrimRight(strings.TrimLeft(arg, "("), ")\n"))
 			} else {
-				new.SExpression = append(new.SExpression, arg[:len(arg)-2])
+				new.SExpression = append(new.SExpression, strings.TrimRight(arg, ")"))
 			}
 			break
 		} else if strings.Contains(arg, ")") {
 			if strings.Contains(arg, "(") {
-				new.SExpression = append(new.SExpression, arg[1:len(arg)-1])
+				new.SExpression = append(new.SExpression, strings.TrimRight(strings.TrimLeft(arg, "("), ")\n"))
 			} else {
-				new.SExpression = append(new.SExpression, arg[:len(arg)-1])
+				new.SExpression = append(new.SExpression, strings.TrimRight(arg, ")"))
 			}
 			break
 		} else if strings.Contains(arg, "'(") && expressionCounter == 0 { // beginning of an s-expression
@@ -114,13 +114,13 @@ func convertInput(new structs.SExpression, args []string) (int, structs.SExpress
 }
 
 func execInput(new structs.SExpression, symbols *map[string]rune,
-	functionTable *map[string]structs.Function) error {
+	functionTable *map[string]structs.Function) (structs.SExpression, error) {
 
 	//function := new.SExpression[0].(string)
 	// Check for built-in commands
 	switch (*symbols)[new.SExpression[0].(string)] {
 	case 'c':
-		return nil
+		return new, nil
 	case 'f':
 		return functions.ExecFunction(new, symbols, functionTable, nil)
 	default:

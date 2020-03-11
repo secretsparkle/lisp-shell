@@ -11,12 +11,16 @@ import (
 )
 
 func ExecFunction(new structs.SExpression, symbols *map[string]rune,
-	functions *map[string]structs.Function, bindings map[string]string) error {
+	functions *map[string]structs.Function, bindings map[string]string) (structs.SExpression, error) {
 	fmt.Println("ExecFunction")
 	fmt.Println(new.SExpression)
+	if new.Data == true {
+		result, err := list(new, symbols, functions, bindings)
+		return result, err
+	}
 	switch new.SExpression[0] {
 	case "'":
-		return list(new)
+		return list(new, symbols, functions, bindings)
 	case "car":
 	case "cdr":
 	case "cons":
@@ -26,7 +30,7 @@ func ExecFunction(new structs.SExpression, symbols *map[string]rune,
 	case "first":
 	case "last":
 	case "list":
-		return list(new)
+		return list(new, symbols, functions, bindings)
 	case "quote":
 	case "rest":
 	case "reverse":
@@ -41,11 +45,11 @@ func ExecFunction(new structs.SExpression, symbols *map[string]rune,
 	case "cd":
 		// 'cd' to home dir with empty path not yet supported.
 		if len(new.SExpression) < 2 {
-			return errors.New("path required")
+			return new, errors.New("path required")
 		}
 		dir := new.SExpression[1].(string)
 		// Change the directory and return the error.
-		return os.Chdir(dir)
+		return new, os.Chdir(dir)
 	case "exit":
 		os.Exit(0)
 	default:
@@ -66,7 +70,7 @@ func ExecFunction(new structs.SExpression, symbols *map[string]rune,
 				index++
 			}
 			ExecFunction(body, symbols, functions, function.Bindings)
-			return nil
+			return new, nil
 		} else { // UNIX command
 			var command []string
 			for _, arg := range new.SExpression {
@@ -80,34 +84,40 @@ func ExecFunction(new structs.SExpression, symbols *map[string]rune,
 			cmd.Stdout = os.Stdout
 
 			// Execute the command
-			return cmd.Run()
+			return new, cmd.Run()
 		}
 	}
-	return nil
+	return new, nil
 }
 
-func list(args structs.SExpression) error {
-	newList := "("
+func list(args structs.SExpression, symbols *map[string]rune,
+	functions *map[string]structs.Function, bindings map[string]string) (structs.SExpression, error) {
+
+	structs.PPSExpression(args.SExpression)
+	var newList structs.SExpression
+	newList.SExpression = append(newList.SExpression, "(")
 
 	for index, token := range args.SExpression {
 		if strings.Contains("list", token.(string)) || strings.Contains("'", token.(string)) {
 			continue
 		} else if index == len(args.SExpression)-1 {
-			newList += token.(string)
+			newList.SExpression = append(newList.SExpression, token.(string))
 		} else if strings.Contains("(", token.(string)) {
-
+			// tricky tricky
+			rest := args
+			rest.SExpression = args.SExpression[index:]
+			ExecFunction(rest, symbols, functions, bindings)
 		} else {
-			newList += token.(string)
-			newList += " "
+			newList.SExpression = append(newList.SExpression, token.(string)+" ")
 		}
 	}
-	newList += ")"
-	fmt.Println(newList)
-	return nil
+	newList.SExpression = append(newList.SExpression, ")")
+	fmt.Println(newList.SExpression)
+	return newList, nil
 }
 
 func defun(args structs.SExpression, symbols *map[string]rune,
-	functions *map[string]structs.Function) error {
+	functions *map[string]structs.Function) (structs.SExpression, error) {
 	newFunction := new(structs.Function)
 	newFunction.Name = args.SExpression[1].(string)
 	fmt.Println(newFunction.Name)
@@ -133,12 +143,12 @@ func defun(args structs.SExpression, symbols *map[string]rune,
 	}
 	(*symbols)[newFunction.Name] = 'f'
 	(*functions)[newFunction.Name] = *newFunction
-	return nil
+	return args, nil
 }
 
-func plus(args structs.SExpression, bindings map[string]string) error {
+func plus(args structs.SExpression, bindings map[string]string) (structs.SExpression, error) {
 	if len(args.SExpression) == 1 {
-		return errors.New("Invalid number of arguments.")
+		return args, errors.New("Invalid number of arguments.")
 	}
 	sum := 0.0
 	for _, number := range args.SExpression[1:] {
@@ -148,36 +158,36 @@ func plus(args structs.SExpression, bindings map[string]string) error {
 		if num, err := strconv.ParseFloat(number.(string), 64); err == nil {
 			sum += num
 		} else {
-			return errors.New("Only numbers can be added.")
+			return args, errors.New("Only numbers can be added.")
 		}
 	}
 	fmt.Println(sum)
-	return nil
+	return args, nil
 }
 
-func minus(args structs.SExpression, bindings map[string]string) error {
+func minus(args structs.SExpression, bindings map[string]string) (structs.SExpression, error) {
 	var number string
 
 	if len(args.SExpression) == 1 {
-		return errors.New("Invalid number of arguments.")
+		return args, errors.New("Invalid number of arguments.")
 	} else if len(args.SExpression) == 2 {
 		if bindings != nil {
 			number = bindings[args.SExpression[1].(string)]
 		}
 		difference, err := strconv.ParseFloat(number, 64)
 		if err != nil {
-			return errors.New("Only numbers can be subtracted.")
+			return args, errors.New("Only numbers can be subtracted.")
 		}
 		difference = 0 - difference
 		fmt.Println(difference)
-		return nil
+		return args, nil
 	} else {
 		if bindings != nil {
 			number = bindings[args.SExpression[1].(string)]
 		}
 		difference, err := strconv.ParseFloat(args.SExpression[1].(string), 64)
 		if err != nil {
-			return errors.New("Only numbers can be subtracted.")
+			return args, errors.New("Only numbers can be subtracted.")
 		}
 		for _, value := range args.SExpression[2:] {
 			if bindings != nil {
@@ -185,24 +195,24 @@ func minus(args structs.SExpression, bindings map[string]string) error {
 				if num, err := strconv.ParseFloat(number, 64); err == nil {
 					difference -= num
 				} else {
-					return errors.New("Only numbers can be subtracted.")
+					return args, errors.New("Only numbers can be subtracted.")
 				}
 			} else {
 				if num, err := strconv.ParseFloat(value.(string), 64); err == nil {
 					difference -= num
 				} else {
-					return errors.New("Only numbers can be subtracted.")
+					return args, errors.New("Only numbers can be subtracted.")
 				}
 			}
 		}
 		fmt.Println(difference)
-		return nil
+		return args, nil
 	}
 }
 
-func times(args structs.SExpression, bindings map[string]string) error {
+func times(args structs.SExpression, bindings map[string]string) (structs.SExpression, error) {
 	if len(args.SExpression) == 1 {
-		return errors.New("Invalid number of arguments.")
+		return args, errors.New("Invalid number of arguments.")
 	}
 	product := 1.0
 	var number string
@@ -212,36 +222,36 @@ func times(args structs.SExpression, bindings map[string]string) error {
 			if num, err := strconv.ParseFloat(number, 64); err == nil {
 				product *= num
 			} else {
-				return errors.New("Only numbers can be multiplied.")
+				return args, errors.New("Only numbers can be multiplied.")
 			}
 		} else {
 			if num, err := strconv.ParseFloat(value.(string), 64); err == nil {
 				product *= num
 			} else {
-				return errors.New("Only numbers can be multiplied.")
+				return args, errors.New("Only numbers can be multiplied.")
 			}
 		}
 	}
 	fmt.Println(product)
-	return nil
+	return args, nil
 }
 
-func divide(args structs.SExpression, bindings map[string]string) error {
+func divide(args structs.SExpression, bindings map[string]string) (structs.SExpression, error) {
 	var numer, numerator float64
 	var err error
 
 	if len(args.SExpression) < 3 {
-		return errors.New("Invalid number of arguments.")
+		return args, errors.New("Invalid number of arguments.")
 	}
 	if bindings != nil {
 		numer, err = strconv.ParseFloat(bindings[args.SExpression[1].(string)], 64)
 		if err != nil {
-			return errors.New("Only numbers can be divided.")
+			return args, errors.New("Only numbers can be divided.")
 		}
 	} else {
 		numer, err = strconv.ParseFloat(args.SExpression[1].(string), 64)
 		if err != nil {
-			return errors.New("Only numbers can be divided.")
+			return args, errors.New("Only numbers can be divided.")
 		}
 	}
 	numerator = numer
@@ -251,16 +261,16 @@ func divide(args structs.SExpression, bindings map[string]string) error {
 			if num, err := strconv.ParseFloat(number.(string), 64); err == nil {
 				numerator /= num
 			} else {
-				return errors.New("Only numbers can be divided.")
+				return args, errors.New("Only numbers can be divided.")
 			}
 		} else {
 			if num, err := strconv.ParseFloat(number.(string), 64); err == nil {
 				numerator /= num
 			} else {
-				return errors.New("Only numbers can be divided.")
+				return args, errors.New("Only numbers can be divided.")
 			}
 		}
 	}
 	fmt.Println(numerator)
-	return nil
+	return args, nil
 }
