@@ -66,6 +66,7 @@ func convertInput(new structs.SExpression, args []string) (int, structs.SExpress
 	currIndex := 0
 
 	for index, arg := range args {
+		fmt.Println("Arg: ", arg)
 		currIndex = index
 		if catchUpIndex > 0 {
 			catchUpIndex--
@@ -73,9 +74,10 @@ func convertInput(new structs.SExpression, args []string) (int, structs.SExpress
 		}
 		if strings.Contains(arg, ")\n") {
 			if strings.Contains(arg, "(") {
-				new.SExpression = append(new.SExpression, strings.TrimRight(strings.TrimLeft(arg, "("), ")\n"))
+				new.SExpression = append(new.SExpression, strings.TrimRight(strings.TrimLeft(arg, "("), ")"))
 			} else {
-				new.SExpression = append(new.SExpression, strings.TrimRight(arg, ")"))
+				arg = strings.Replace(arg, ")\n", "", -1)
+				new.SExpression = append(new.SExpression, strings.Replace(arg, ")", "", -1))
 			}
 			break
 		} else if strings.Contains(arg, ")") {
@@ -106,7 +108,7 @@ func convertInput(new structs.SExpression, args []string) (int, structs.SExpress
 			catchUpIndex = newIndex
 			new.SExpression = append(new.SExpression, inner.SExpression)
 		} else {
-			new.SExpression = append(new.SExpression, arg)
+			new.SExpression = append(new.SExpression, strings.TrimRight(arg, ")"))
 		}
 	}
 	fmt.Println("Settled Input: ", new.SExpression)
