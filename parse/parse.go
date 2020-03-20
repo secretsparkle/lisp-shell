@@ -2,7 +2,6 @@ package parse
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 )
 
@@ -19,7 +18,6 @@ func tokenize(input string) []string {
 	var atom string
 
 	for range input {
-		fmt.Println(input)
 		switch input[0] {
 		case '\n':
 			break
@@ -54,9 +52,6 @@ func tokenize(input string) []string {
 }
 
 func sExpression(tokens []string) bool {
-	fmt.Println("s-expression")
-	fmt.Println(tokens)
-
 	if atom(tokens[0]) || list(tokens) {
 		return true
 	}
@@ -64,17 +59,13 @@ func sExpression(tokens []string) bool {
 }
 
 func list(tokens []string) bool {
-	fmt.Println("list")
-	fmt.Println(tokens)
 	var stack []string
-
 	if tokens[0] != "(" {
 		return false
 	}
 	stack = append(stack, "(")
 	tokens = tokens[1:]
 	for range tokens {
-		fmt.Println(stack)
 		if tokens[0] == ")" && len(stack) > 0 {
 			stack = stack[1:]
 		} else if tokens[0] == ")" && len(stack) == 0 {
@@ -88,8 +79,6 @@ func list(tokens []string) bool {
 }
 
 func atom(token string) bool {
-	fmt.Println("atom")
-	fmt.Println(token)
 	var IsAtom = regexp.MustCompile(`^[[:graph:]]+$`).MatchString
 	if !IsAtom(token) || token == "(" || token == ")" {
 		return false

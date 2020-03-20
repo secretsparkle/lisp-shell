@@ -12,6 +12,7 @@ import (
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
+
 	symbols := map[string]rune{
 		"if":      'c',
 		"cond":    'c',
@@ -44,29 +45,29 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 		}
 
-		var new structs.SExpression
+		var s_expressions structs.List
+		//var new structs.SExpression
 		args := strings.Split(input, " ")
-		_, new = convertInput(new, args)
+		//_, new = convertInput(new, args)
+		_, s_expressions = transliterate(s_expressions, args)
 
 		if err = parse.Parse(input); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 
-		fmt.Println("Valid s-expression")
 		// Handle the execution of the input.
-		if new, err = execInput(new, &symbols, &functions); err != nil {
+		if s_expressions, err = execInput(s_expressions, &symbols, &functions); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 	}
 }
 
-func convertInput(new structs.SExpression, args []string) (int, structs.SExpression) {
-	expressionCounter := 0
+func transliterate(list structs.List, args []string) (int, structs.List) {
+	expressionCount := 0
 	catchUpIndex := 0
 	currIndex := 0
 
 	for index, arg := range args {
-		fmt.Println("Arg: ", arg)
 		currIndex = index
 		if catchUpIndex > 0 {
 			catchUpIndex--
@@ -74,58 +75,55 @@ func convertInput(new structs.SExpression, args []string) (int, structs.SExpress
 		}
 		if strings.Contains(arg, ")\n") {
 			if strings.Contains(arg, "(") {
-				new.SExpression = append(new.SExpression, strings.TrimRight(strings.TrimLeft(arg, "("), ")"))
+				list.PushBack(strings.TrimRight(strings.TrimLeft(arg, "("), ")\n"))
 			} else {
 				arg = strings.Replace(arg, ")\n", "", -1)
-				new.SExpression = append(new.SExpression, strings.Replace(arg, ")", "", -1))
+				list.PushBack(strings.Replace(arg, ")", "", -1))
 			}
 			break
 		} else if strings.Contains(arg, ")") {
 			if strings.Contains(arg, "(") {
-				new.SExpression = append(new.SExpression, strings.TrimRight(strings.TrimLeft(arg, "("), ")\n"))
+				list.PushBack(strings.TrimRight(strings.TrimLeft(arg, "("), ")\n"))
 			} else {
-				new.SExpression = append(new.SExpression, strings.TrimRight(arg, ")"))
+				list.PushBack(strings.TrimRight(arg, ")"))
 			}
 			break
-		} else if strings.Contains(arg, "'(") && expressionCounter == 0 { // beginning of an s-expression
-			new.Data = true
-			new.SExpression = append(new.SExpression, arg[2:])
-			expressionCounter++
-		} else if strings.Contains(arg, "(") && expressionCounter == 0 { // beginning of an s-expression
-			new.SExpression = append(new.SExpression, arg[1:])
-			expressionCounter++
-		} else if strings.Contains(arg, "'(") && expressionCounter > 0 {
+		} else if strings.Contains(arg, "'(") && expressionCount == 0 { // beginning
+			list.PushBack(arg[2:])
+			expressionCount++
+		} else if strings.Contains(arg, "(") && expressionCount == 0 { // beginning
+			list.PushBack(arg[1:])
+			expressionCount++
+		} else if strings.Contains(arg, "'(") && expressionCount > 0 {
 			var newIndex int
-			var inner structs.SExpression
-			inner.Data = true
-			newIndex, inner = convertInput(inner, args[index:])
+			var innerList structs.List
+			newIndex, innerList = transliterate(innerList, args[index:])
 			catchUpIndex = newIndex
-			new.SExpression = append(new.SExpression, inner.SExpression)
-		} else if strings.Contains(arg, "(") && expressionCounter > 0 {
+			list.PushBack(innerList)
+		} else if strings.Contains(arg, "(") && expressionCount > 0 {
 			var newIndex int
-			var inner structs.SExpression
-			newIndex, inner = convertInput(inner, args[index:])
+			var innerList structs.List
+			newIndex, innerList = transliterate(innerList, args[index:])
 			catchUpIndex = newIndex
-			new.SExpression = append(new.SExpression, inner.SExpression)
+			list.PushBack(innerList)
 		} else {
-			new.SExpression = append(new.SExpression, strings.TrimRight(arg, ")"))
+			list.PushBack(strings.TrimRight(arg, ")"))
 		}
 	}
-	fmt.Println("Settled Input: ", new.SExpression)
-	return currIndex, new
+	return currIndex, list
 }
 
-func execInput(new structs.SExpression, symbols *map[string]rune,
-	functionTable *map[string]structs.Function) (structs.SExpression, error) {
+func execInput(expression structs.List, symbols *map[string]rune,
+	functionTable *map[string]structs.Function) (structs.List, error) {
 
 	//function := new.SExpression[0].(string)
 	// Check for built-in commands
-	switch (*symbols)[new.SExpression[0].(string)] {
+	switch expression.Head.Data {
 	case 'c':
-		return new, nil
+		return expression, nil
 	case 'f':
-		return functions.ExecFunction(new, symbols, functionTable, nil)
+		return functions.ExecFunction(expression, symbols, functionTable, nil)
 	default:
-		return functions.ExecFunction(new, symbols, functionTable, nil)
+		return functions.ExecFunction(expression, symbols, functionTable, nil)
 	}
 }
