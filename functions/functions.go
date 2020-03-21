@@ -28,7 +28,11 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 	case "rest":
 	case "reverse":
 	case "+":
-		return plus(expression, bindings)
+		sum, err := plus(expression, symbols, functions, bindings)
+		if err == nil {
+			fmt.Println(sum)
+		}
+		return expression, err
 	case "-":
 		return minus(expression, bindings)
 	case "*":
@@ -82,7 +86,8 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 
 // will need to add in symbols, functions and bindings later
 func list(expression structs.List) (structs.List, error) {
-	fmt.Print("(")
+	var newList structs.List
+	newList = *newList.PushBack("(")
 	for a := expression.Head; a != nil; a = a.Next() {
 		if a.Data == "list" {
 			continue
@@ -90,16 +95,21 @@ func list(expression structs.List) (structs.List, error) {
 		switch a.Data.(type) {
 		case string:
 			if a.Next() == nil {
-				fmt.Print(a.Data, ")")
+				newList = *newList.PushBack(")")
 			} else {
-				fmt.Print(a.Data, " ")
+				newList = *newList.PushBack(a.Data)
+				newList = *newList.PushBack(" ")
 			}
 		default:
-			list(a.Data.(structs.List))
+			if subList, err := list(a.Data.(structs.List)); err == nil {
+				newList = *newList.PushBack(subList)
+			} else {
+				return subList, err
+			}
 		}
 	}
-	fmt.Println()
-	return expression, nil
+	newList = *newList.PushBack("\n")
+	return newList, nil
 }
 
 func defun(llat structs.List, symbols *map[string]rune,
@@ -133,25 +143,47 @@ func params(lat structs.List, funct *structs.Function, symbols *map[string]rune,
 	return nil
 }
 
-func plus(expression structs.List, bindings map[string]string) (structs.List, error) {
+func plus(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
+	bindings map[string]string) (float64, error) {
 	if expression.Len() == 1 {
-		return expression, errors.New("Invalid number of arguments.")
+		return 0.0, errors.New("Invalid number of arguments.")
 	}
 	sum := 0.0
 	e := expression.Head
 	for e = e.Next(); e != nil; e = e.Next() {
-		number := e.Data
-		if bindings != nil {
-			number = bindings[number.(string)]
-		}
-		if num, err := strconv.ParseFloat(number.(string), 64); err == nil {
-			sum += num
-		} else {
-			return expression, errors.New("Only numbers can be added.")
+		switch e.Data.(type) {
+		case string:
+			number := e.Data
+			if bindings != nil {
+				number = bindings[number.(string)]
+			}
+			if num, err := strconv.ParseFloat(number.(string), 64); err == nil {
+				sum += num
+			} else {
+				return 0.0, errors.New("Only numbers can be added.")
+			}
+		default:
+			subValue, err := ExecFunction(e.Data.(structs.List), symbols, functions, bindings)
+			if err != nil {
+				return 0.0, err
+			}
+			switch subValue.(type) {
+			case int:
+				sum += subValue
+			case float64:
+				sum += subValue
+			case string:
+				if subValue, err := strconv.ParseFloat(subValue.(string), 64); err == nil {
+					sum += subValue
+				} else {
+					return 0.0, errors.New("Only numbers can be added.")
+				}
+			default:
+				return 0.0, errors.New("Only numbers can be added.")
+			}
 		}
 	}
-	fmt.Println(sum)
-	return expression, nil
+	return sum, nil
 }
 
 func minus(expression structs.List, bindings map[string]string) (structs.List, error) {
