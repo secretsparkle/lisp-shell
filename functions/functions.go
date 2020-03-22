@@ -10,7 +10,7 @@ import (
 )
 
 func ExecFunction(expression structs.List, symbols *map[string]rune,
-	functions *map[string]structs.Function, bindings map[string]string) (structs.List, error) {
+	functions *map[string]structs.Function, bindings map[string]string) (interface{}, error) {
 	switch expression.Head.Data {
 	case "'":
 		return list(expression)
@@ -29,10 +29,7 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 	case "reverse":
 	case "+":
 		sum, err := plus(expression, symbols, functions, bindings)
-		if err == nil {
-			fmt.Println(sum)
-		}
-		return expression, err
+		return sum, err
 	case "-":
 		return minus(expression, bindings)
 	case "*":
@@ -167,20 +164,7 @@ func plus(expression structs.List, symbols *map[string]rune, functions *map[stri
 			if err != nil {
 				return 0.0, err
 			}
-			switch subValue.(type) {
-			case int:
-				sum += subValue
-			case float64:
-				sum += subValue
-			case string:
-				if subValue, err := strconv.ParseFloat(subValue.(string), 64); err == nil {
-					sum += subValue
-				} else {
-					return 0.0, errors.New("Only numbers can be added.")
-				}
-			default:
-				return 0.0, errors.New("Only numbers can be added.")
-			}
+			sum += subValue.(float64)
 		}
 	}
 	return sum, nil
