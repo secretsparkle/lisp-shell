@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 )
 
 func ExecFunction(expression structs.List, symbols *map[string]rune,
@@ -44,10 +45,44 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 		if expression.Len() < 2 {
 			return expression, errors.New("path required")
 		}
-		e := expression.Head.Next()
-		dir := e.Data.(string)
+		var dir interface{}
+		var err error
+		e := expression.Head
+		e = e.Next()
+		switch e.Data.(type) {
+		case string:
+			dir = e.Data.(string)
+		default:
+			dir, err = ExecFunction(e.Data.(structs.List), symbols, functions, bindings)
+			if err != nil {
+				return 0.0, err
+			}
+		}
 		// Change the directory and return the error.
-		return expression, os.Chdir(dir)
+		return expression, os.Chdir(dir.(string))
+	case "echo":
+		e := expression.Head
+		e = e.Next()
+		var out []string
+		for ; e != nil; e = e.Next() {
+			switch e.Data.(type) {
+			case string:
+				out = append(out, e.Data.(string))
+			default:
+				value, err := ExecFunction(e.Data.(structs.List), symbols, functions, bindings)
+				if err != nil {
+					return "", err
+				}
+				out = append(out, value.(string))
+			}
+		}
+		var output string
+		for _, val := range out {
+			output += val
+			output += " "
+		}
+		output = strings.TrimRight(output, " \n")
+		return output, nil
 	case "exit":
 		os.Exit(0)
 	default:
@@ -66,27 +101,29 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 			ExecFunction(body, symbols, functions, function.Bindings)
 			return expression, nil
 		} else { // UNIX command
-			var command []string
+			var statement []string
+			statement = append(statement, command)
 			for e := expression.Head; e != nil; e = e.Next() {
 				switch e.Data.(type) {
 				case string:
-					command = append(command, e.Data.(string))
+					statement = append(statement, e.Data.(string))
 				default:
 					subValue, err := ExecFunction(e.Data.(structs.List), symbols, functions, bindings)
+					fmt.Println("UNIX return: ", subValue)
 					if err != nil {
 						return 0.0, err
 					}
-					command = append(command, subValue.(string))
+					statement = append(statement, subValue.(string))
 				}
 				// Pass the program and the arguments separately
-				cmd := exec.Command(command[0], command[1:]...)
+				cmd := exec.Command(statement[0], statement[1:]...)
 
 				//Set the correct output device.
 				cmd.Stderr = os.Stderr
 				cmd.Stdout = os.Stdout
 
 				// Execute the command
-				return expression, cmd.Run()
+				return cmd.Run(), nil
 			}
 		}
 		return expression, nil
