@@ -16,6 +16,7 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 	case "'":
 		return list(expression)
 	case "car":
+		return car(expression, symbols, functions, bindings)
 	case "cdr":
 	case "cons":
 	case "defun":
@@ -26,6 +27,7 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 	case "list":
 		return list(expression)
 	case "quote":
+	case "map":
 	case "rest":
 	case "reverse":
 	case "+":
@@ -127,6 +129,25 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 			// Execute the command
 			return cmd.Run(), nil
 		}
+	}
+	return nil, nil
+}
+
+func car(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
+	bindings map[string]string) (interface{}, error) {
+	// honestly will probably need to be reworked in the future
+	e := expression.Head
+	switch e.Next().Data.(type) {
+	case string:
+		return nil, errors.New("car requires a list.")
+	default:
+		e = e.Next()
+		l := e.Data.(structs.List)
+		e = l.Head
+		if e.Data == "list" {
+			e = l.Head.Next()
+		}
+		return e.Data, nil
 	}
 	return nil, nil
 }
