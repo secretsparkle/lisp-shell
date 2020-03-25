@@ -33,9 +33,6 @@ func main() {
 	}
 
 	functions := make(map[string]structs.Function)
-	//strings := make(map[string]string)
-	//numbers := make(map[string]float64)
-	//bools := make(map[string]bool)
 
 	for {
 		fmt.Print("> ")
@@ -46,9 +43,8 @@ func main() {
 		}
 
 		var s_expressions structs.List
-		//var new structs.SExpression
+		var value interface{}
 		args := strings.Split(input, " ")
-		//_, new = convertInput(new, args)
 		_, s_expressions = transliterate(s_expressions, args)
 
 		if err = parse.Parse(input); err != nil {
@@ -56,8 +52,11 @@ func main() {
 		}
 
 		// Handle the execution of the input.
-		if s_expressions, err = execInput(s_expressions, &symbols, &functions); err != nil {
+		if value, err = execInput(s_expressions, &symbols, &functions); err != nil {
 			fmt.Fprintln(os.Stderr, err)
+		}
+		if value != nil {
+			fmt.Println(value)
 		}
 	}
 }
@@ -75,7 +74,10 @@ func transliterate(list structs.List, args []string) (int, structs.List) {
 		}
 		if strings.Contains(arg, ")\n") {
 			if strings.Contains(arg, "(") {
-				list.PushBack(strings.TrimRight(strings.TrimLeft(arg, "("), ")\n"))
+				arg = strings.Replace(arg, "(", "", -1)
+				arg = strings.Replace(arg, ")", "", -1)
+				arg = strings.Replace(arg, "\n", "", -1)
+				list.PushBack(arg)
 			} else {
 				arg = strings.Replace(arg, ")\n", "", -1)
 				list.PushBack(strings.Replace(arg, ")", "", -1))
@@ -114,7 +116,7 @@ func transliterate(list structs.List, args []string) (int, structs.List) {
 }
 
 func execInput(expression structs.List, symbols *map[string]rune,
-	functionTable *map[string]structs.Function) (structs.List, error) {
+	functionTable *map[string]structs.Function) (interface{}, error) {
 
 	//function := new.SExpression[0].(string)
 	// Check for built-in commands
@@ -122,8 +124,10 @@ func execInput(expression structs.List, symbols *map[string]rune,
 	case 'c':
 		return expression, nil
 	case 'f':
-		return functions.ExecFunction(expression, symbols, functionTable, nil)
+		value, err := functions.ExecFunction(expression, symbols, functionTable, nil)
+		return value, err
 	default:
-		return functions.ExecFunction(expression, symbols, functionTable, nil)
+		value, err := functions.ExecFunction(expression, symbols, functionTable, nil)
+		return value, err
 	}
 }
