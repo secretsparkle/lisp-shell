@@ -59,7 +59,7 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 			}
 		}
 		// Change the directory and return the error.
-		return expression, os.Chdir(dir.(string))
+		return nil, os.Chdir(dir.(string))
 	case "echo":
 		e := expression.Head
 		e = e.Next()
@@ -103,7 +103,8 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 		} else { // UNIX command
 			var statement []string
 			statement = append(statement, command)
-			for e := expression.Head; e != nil; e = e.Next() {
+			e := expression.Head.Next()
+			for ; e != nil; e = e.Next() {
 				switch e.Data.(type) {
 				case string:
 					statement = append(statement, e.Data.(string))
@@ -115,18 +116,17 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 					}
 					statement = append(statement, subValue.(string))
 				}
-				// Pass the program and the arguments separately
-				cmd := exec.Command(statement[0], statement[1:]...)
-
-				//Set the correct output device.
-				cmd.Stderr = os.Stderr
-				cmd.Stdout = os.Stdout
-
-				// Execute the command
-				return cmd.Run(), nil
 			}
+			// Pass the program and the arguments separately
+			cmd := exec.Command(statement[0], statement[1:]...)
+
+			//Set the correct output device.
+			cmd.Stderr = os.Stderr
+			cmd.Stdout = os.Stdout
+
+			// Execute the command
+			return cmd.Run(), nil
 		}
-		return expression, nil
 	}
 	return nil, nil
 }

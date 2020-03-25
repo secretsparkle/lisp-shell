@@ -55,7 +55,9 @@ func main() {
 		if value, err = execInput(s_expressions, &symbols, &functions); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
-		fmt.Println(value)
+		if value != nil {
+			fmt.Println(value)
+		}
 	}
 }
 
