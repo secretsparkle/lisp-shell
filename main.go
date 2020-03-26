@@ -33,6 +33,7 @@ func main() {
 	}
 
 	functions := make(map[string]structs.Function)
+	bindings := make(map[string]string)
 
 	for {
 		fmt.Print("> ")
@@ -52,7 +53,7 @@ func main() {
 		}
 
 		// Handle the execution of the input.
-		if value, err = execInput(s_expressions, &symbols, &functions); err != nil {
+		if value, err = execInput(s_expressions, &symbols, &functions, &bindings); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		if value != nil {
@@ -118,7 +119,7 @@ func transliterate(list structs.List, args []string) (int, structs.List) {
 }
 
 func execInput(expression structs.List, symbols *map[string]rune,
-	functionTable *map[string]structs.Function) (interface{}, error) {
+	functionTable *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
 
 	//function := new.SExpression[0].(string)
 	// Check for built-in commands
@@ -126,10 +127,10 @@ func execInput(expression structs.List, symbols *map[string]rune,
 	case 'c':
 		return expression, nil
 	case 'f':
-		value, err := functions.ExecFunction(expression, symbols, functionTable, nil)
+		value, err := functions.ExecFunction(expression, symbols, functionTable, *bindings)
 		return value, err
 	default:
-		value, err := functions.ExecFunction(expression, symbols, functionTable, nil)
+		value, err := functions.ExecFunction(expression, symbols, functionTable, *bindings)
 		return value, err
 	}
 }

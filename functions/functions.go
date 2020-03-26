@@ -23,13 +23,17 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 	case "defun":
 		return defun(expression, symbols, functions)
 	case "defvar":
+		return defvar(expression, symbols, functions, bindings)
 	case "first":
+		return car(expression, symbols, functions, bindings)
 	case "last":
+		return last(expression, symbols, functions, bindings)
 	case "list":
 		return list(expression)
 	case "quote":
 	case "map":
 	case "rest":
+		return cdr(expression, symbols, functions, bindings)
 	case "reverse":
 	case "+":
 		sum, err := plus(expression, symbols, functions, bindings)
@@ -175,6 +179,57 @@ func cdr(expression structs.List, symbols *map[string]rune, functions *map[strin
 	}
 }
 
+func defun(llat structs.List, symbols *map[string]rune,
+	functions *map[string]structs.Function) (structs.List, error) {
+	funct := new(structs.Function)
+	a := llat.Head
+	a = a.Next()
+	funct.Name = a.Data.(string)
+	a = a.Next()
+	params(a.Data.(structs.List), funct, symbols, functions)
+	a = a.Next()
+	funct.Body = a.Data.(structs.List)
+
+	(*symbols)[funct.Name] = 'f'
+	(*functions)[funct.Name] = *funct
+
+	fmt.Println("New Function Name: ", funct.Name)
+	fmt.Println("New Function Args: ", funct.Args)
+	fmt.Println("New Function Body: ")
+	structs.PrintList(funct.Body)
+
+	return llat, nil
+}
+
+func defvar(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
+	bindings map[string]string) (interface{}, error) {
+	if expression.Len() != 3 {
+		return nil, errors.New("Invalid number of arguments supplied to defvar")
+	}
+	e := expression.Head
+	e = e.Next()
+	symbol := e.Data.(string)
+	e = e.Next()
+	value := e.Data.(string)
+	bindings[symbol] = value
+
+	return strings.ToUpper(symbol), nil
+}
+
+func last(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
+	bindings map[string]string) (interface{}, error) {
+	e := expression.Head
+	switch e.Next().Data.(type) {
+	case string:
+		return nil, errors.New("last requires a list")
+	default:
+		e = e.Next()
+		l := e.Data.(structs.List)
+		e = l.Tail
+		return e.Data, nil
+	}
+}
+
 // will need to add in symbols, functions and bindings later
 func list(expression structs.List) (structs.List, error) {
 	var newList structs.List
@@ -202,28 +257,6 @@ func list(expression structs.List) (structs.List, error) {
 	}
 	newList = *newList.PushBack("\n")
 	return newList, nil
-}
-
-func defun(llat structs.List, symbols *map[string]rune,
-	functions *map[string]structs.Function) (structs.List, error) {
-	funct := new(structs.Function)
-	a := llat.Head
-	a = a.Next()
-	funct.Name = a.Data.(string)
-	a = a.Next()
-	params(a.Data.(structs.List), funct, symbols, functions)
-	a = a.Next()
-	funct.Body = a.Data.(structs.List)
-
-	(*symbols)[funct.Name] = 'f'
-	(*functions)[funct.Name] = *funct
-
-	fmt.Println("New Function Name: ", funct.Name)
-	fmt.Println("New Function Args: ", funct.Args)
-	fmt.Println("New Function Body: ")
-	structs.PrintList(funct.Body)
-
-	return llat, nil
 }
 
 func params(lat structs.List, funct *structs.Function, symbols *map[string]rune,
