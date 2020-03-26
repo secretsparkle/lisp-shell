@@ -18,6 +18,7 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 	case "car":
 		return car(expression, symbols, functions, bindings)
 	case "cdr":
+		return cdr(expression, symbols, functions, bindings)
 	case "cons":
 	case "defun":
 		return defun(expression, symbols, functions)
@@ -139,7 +140,7 @@ func car(expression structs.List, symbols *map[string]rune, functions *map[strin
 	e := expression.Head
 	switch e.Next().Data.(type) {
 	case string:
-		return nil, errors.New("car requires a list.")
+		return nil, errors.New("car requires a list")
 	default:
 		e = e.Next()
 		l := e.Data.(structs.List)
@@ -150,6 +151,28 @@ func car(expression structs.List, symbols *map[string]rune, functions *map[strin
 		return e.Data, nil
 	}
 	return nil, nil
+}
+
+func cdr(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
+	bindings map[string]string) (interface{}, error) {
+	e := expression.Head
+	switch e.Next().Data.(type) {
+	case string:
+		return nil, errors.New("cdr requires a list")
+	default:
+		e = e.Next()
+		l := e.Data.(structs.List)
+		e = l.Head
+		if e.Data == "list" {
+			e = l.Head.Next()
+		}
+		e = e.Next()
+		var rest []string
+		for ; e != nil; e = e.Next() {
+			rest = append(rest, e.Data.(string))
+		}
+		return rest, nil
+	}
 }
 
 // will need to add in symbols, functions and bindings later

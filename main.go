@@ -56,6 +56,8 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		if value != nil {
+			// somehow check type of value?
+			// i.e. if value is []string, add parenths?
 			fmt.Println(value)
 		}
 	}
