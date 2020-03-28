@@ -140,6 +140,7 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 
 func car(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
 	bindings map[string]string) (interface{}, error) {
+	structs.PrintList(expression)
 	// honestly will probably need to be reworked in the future
 	e := expression.Head
 	switch e.Next().Data.(type) {
@@ -154,7 +155,6 @@ func car(expression structs.List, symbols *map[string]rune, functions *map[strin
 		}
 		return e.Data, nil
 	}
-	return nil, nil
 }
 
 func cdr(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,

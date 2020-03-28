@@ -102,6 +102,7 @@ func transliterate(list structs.List, args []string) (int, structs.List) {
 		} else if strings.Contains(arg, "'(") && expressionCount > 0 {
 			var newIndex int
 			var innerList structs.List
+			list.PushBack("'")
 			newIndex, innerList = transliterate(innerList, args[index:])
 			catchUpIndex = newIndex
 			list.PushBack(innerList)

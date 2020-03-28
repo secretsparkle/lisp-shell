@@ -40,7 +40,6 @@ func (l *List) Len() int {
 	return l.Length
 }
 
-// TODO: Finish PushFront and PushBack
 func (l *List) PushFront(v interface{}) *List {
 	e := new(Element)
 	e.Data = v
