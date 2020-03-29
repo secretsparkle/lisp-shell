@@ -11,22 +11,22 @@ import (
 )
 
 func ExecFunction(expression structs.List, symbols *map[string]rune,
-	functions *map[string]structs.Function, bindings map[string]string) (interface{}, error) {
+	functions *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
 	switch expression.Head.Data {
 	case "'":
 		return list(expression)
-	case "car":
+	case "car": //redo for nesting
 		return car(expression, symbols, functions, bindings)
-	case "cdr":
+	case "cdr": //redo for nesting
 		return cdr(expression, symbols, functions, bindings)
 	case "cons":
 	case "defun":
 		return defun(expression, symbols, functions)
-	case "defvar":
+	case "defvar": // redo for nesting
 		return defvar(expression, symbols, functions, bindings)
 	case "first":
 		return car(expression, symbols, functions, bindings)
-	case "last":
+	case "last": // redo for nesting
 		return last(expression, symbols, functions, bindings)
 	case "list":
 		return list(expression)
@@ -34,7 +34,8 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 	case "map":
 	case "rest":
 		return cdr(expression, symbols, functions, bindings)
-	case "reverse":
+	case "reverse": // redo for nesting
+		return reverse(expression, symbols, functions, bindings)
 	case "+":
 		sum, err := plus(expression, symbols, functions, bindings)
 		return sum, err
@@ -54,6 +55,7 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 		}
 		var dir interface{}
 		var err error
+
 		e := expression.Head
 		e = e.Next()
 		switch e.Data.(type) {
@@ -105,7 +107,7 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 				function.Bindings[arg] = value
 				e = e.Next()
 			}
-			ExecFunction(body, symbols, functions, function.Bindings)
+			ExecFunction(body, symbols, functions, &function.Bindings)
 			return expression, nil
 		} else { // UNIX command
 			var statement []string
@@ -139,41 +141,59 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 }
 
 func car(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings map[string]string) (interface{}, error) {
-	structs.PrintList(expression)
+	bindings *map[string]string) (interface{}, error) {
 	// honestly will probably need to be reworked in the future
 	e := expression.Head
-	switch e.Next().Data.(type) {
+	e = e.Next()
+	if e.Data == "'" {
+		e = e.Next()
+	}
+	switch e.Data.(type) {
 	case string:
 		return nil, errors.New("car requires a list")
 	default:
-		e = e.Next()
 		l := e.Data.(structs.List)
 		e = l.Head
 		if e.Data == "list" {
 			e = l.Head.Next()
+		} else if (*symbols)[e.Data.(string)] == 'f' {
+			retVal, err := ExecFunction(l, symbols, functions, bindings)
+			if err != nil {
+				return nil, err
+			}
+			e = retVal.(structs.List).Head
 		}
 		return e.Data, nil
 	}
 }
 
 func cdr(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings map[string]string) (interface{}, error) {
+	bindings *map[string]string) (interface{}, error) {
 	e := expression.Head
-	switch e.Next().Data.(type) {
+	e = e.Next()
+	if e.Data == "'" {
+		e = e.Next()
+	}
+	switch e.Data.(type) {
 	case string:
 		return nil, errors.New("cdr requires a list")
 	default:
-		e = e.Next()
+		//e = e.Next()
 		l := e.Data.(structs.List)
 		e = l.Head
 		if e.Data == "list" {
 			e = l.Head.Next()
+		} else if (*symbols)[e.Data.(string)] == 'f' {
+			retVal, err := ExecFunction(l, symbols, functions, bindings)
+			if err != nil {
+				return nil, err
+			}
+			e = retVal.(structs.List).Head
 		}
 		e = e.Next()
-		var rest []string
+		var rest structs.List
 		for ; e != nil; e = e.Next() {
-			rest = append(rest, e.Data.(string))
+			rest.PushBack(e.Data.(string))
 		}
 		return rest, nil
 	}
@@ -202,7 +222,7 @@ func defun(llat structs.List, symbols *map[string]rune,
 }
 
 func defvar(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings map[string]string) (interface{}, error) {
+	bindings *map[string]string) (interface{}, error) {
 	if expression.Len() != 3 {
 		return nil, errors.New("Invalid number of arguments supplied to defvar")
 	}
@@ -211,13 +231,13 @@ func defvar(expression structs.List, symbols *map[string]rune, functions *map[st
 	symbol := e.Data.(string)
 	e = e.Next()
 	value := e.Data.(string)
-	bindings[symbol] = value
+	(*bindings)[symbol] = value
 
 	return strings.ToUpper(symbol), nil
 }
 
 func last(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings map[string]string) (interface{}, error) {
+	bindings *map[string]string) (interface{}, error) {
 	e := expression.Head
 	switch e.Next().Data.(type) {
 	case string:
@@ -269,7 +289,7 @@ func params(lat structs.List, funct *structs.Function, symbols *map[string]rune,
 }
 
 func plus(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings map[string]string) (float64, error) {
+	bindings *map[string]string) (float64, error) {
 	if expression.Len() == 1 {
 		return 0.0, errors.New("Invalid number of arguments.")
 	}
@@ -280,7 +300,7 @@ func plus(expression structs.List, symbols *map[string]rune, functions *map[stri
 		case string:
 			number := e.Data
 			if bindings != nil {
-				number = bindings[number.(string)]
+				number = (*bindings)[number.(string)]
 			}
 			if num, err := strconv.ParseFloat(number.(string), 64); err == nil {
 				sum += num
@@ -299,7 +319,7 @@ func plus(expression structs.List, symbols *map[string]rune, functions *map[stri
 }
 
 func minus(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings map[string]string) (interface{}, error) {
+	bindings *map[string]string) (interface{}, error) {
 	var number string
 	e := expression.Head
 	e = e.Next()
@@ -308,7 +328,7 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 		return expression, errors.New("Invalid number of arguments.")
 	} else if expression.Len() == 2 {
 		if bindings != nil {
-			number = bindings[e.Data.(string)]
+			number = (*bindings)[e.Data.(string)]
 		}
 		difference, err := strconv.ParseFloat(number, 64)
 		if err != nil {
@@ -318,7 +338,7 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 		return difference, nil
 	} else {
 		if bindings != nil {
-			number = bindings[e.Data.(string)]
+			number = (*bindings)[e.Data.(string)]
 		}
 		difference, err := strconv.ParseFloat(e.Data.(string), 64)
 		if err != nil {
@@ -328,7 +348,7 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 			switch e.Data.(type) {
 			case string:
 				if bindings != nil {
-					number = bindings[e.Data.(string)]
+					number = (*bindings)[e.Data.(string)]
 					if num, err := strconv.ParseFloat(number, 64); err == nil {
 						difference -= num
 					} else {
@@ -354,8 +374,40 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 	}
 }
 
+func reverse(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]string) (interface{}, error) {
+	var reversed structs.List
+
+	e := expression.Head
+	e = e.Next()
+	if e.Data == "'" {
+		e = e.Next()
+	}
+	switch e.Data.(type) {
+	case string:
+		return nil, errors.New("reverse requires a list")
+	default:
+		retVal := e.Data.(structs.List)
+		e = retVal.Head
+		if e.Data == "list" {
+			e = retVal.Head.Next()
+		} else if (*symbols)[e.Data.(string)] == 'f' {
+			l, err := ExecFunction(retVal, symbols, functions, bindings)
+			if err != nil {
+				return nil, err
+			}
+			retVal = l.(structs.List)
+		}
+		e = retVal.Tail
+		for ; e != nil; e = e.Prev() {
+			reversed.PushBack(e.Data)
+		}
+		return reversed, nil
+	}
+}
+
 func times(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings map[string]string) (interface{}, error) {
+	bindings *map[string]string) (interface{}, error) {
 	if expression.Len() == 1 {
 		return expression, errors.New("Invalid number of arguments.")
 	}
@@ -366,7 +418,7 @@ func times(expression structs.List, symbols *map[string]rune, functions *map[str
 		switch e.Data.(type) {
 		case string:
 			if bindings != nil {
-				number = bindings[e.Data.(string)]
+				number = (*bindings)[e.Data.(string)]
 				if num, err := strconv.ParseFloat(number, 64); err == nil {
 					product *= num
 				} else {
@@ -391,7 +443,7 @@ func times(expression structs.List, symbols *map[string]rune, functions *map[str
 }
 
 func divide(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings map[string]string) (interface{}, error) {
+	bindings *map[string]string) (interface{}, error) {
 	var numer, numerator float64
 	var err error
 	e := expression.Head
@@ -401,7 +453,7 @@ func divide(expression structs.List, symbols *map[string]rune, functions *map[st
 		return expression, errors.New("Invalid number of arguments.")
 	}
 	if bindings != nil {
-		numer, err = strconv.ParseFloat(bindings[e.Data.(string)], 64)
+		numer, err = strconv.ParseFloat((*bindings)[e.Data.(string)], 64)
 		if err != nil {
 			return expression, errors.New("Only numbers can be divided.")
 		}
@@ -416,7 +468,7 @@ func divide(expression structs.List, symbols *map[string]rune, functions *map[st
 		switch e.Data.(type) {
 		case string:
 			if bindings != nil {
-				number := bindings[e.Data.(string)]
+				number := (*bindings)[e.Data.(string)]
 				if num, err := strconv.ParseFloat(number, 64); err == nil {
 					numerator /= num
 				} else {

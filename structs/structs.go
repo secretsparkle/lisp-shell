@@ -94,10 +94,13 @@ func PrintList(l List) {
 	for e := l.Head; e != nil; e = e.Next() {
 		switch e.Data.(type) {
 		case string:
-			fmt.Printf("%s ", e.Data)
+			if e == l.Tail {
+				fmt.Printf("%s", e.Data)
+			} else {
+				fmt.Printf("%s ", e.Data)
+			}
 		default:
 			PrintList(e.Data.(List))
 		}
 	}
-	fmt.Println()
 }

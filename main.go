@@ -57,9 +57,14 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		if value != nil {
-			// somehow check type of value?
-			// i.e. if value is []string, add parenths?
-			fmt.Println(value)
+			switch value.(type) {
+			case string:
+				fmt.Println(value.(string))
+			default:
+				fmt.Print("(")
+				structs.PrintList(value.(structs.List))
+				fmt.Println(")")
+			}
 		}
 	}
 }
@@ -122,16 +127,15 @@ func transliterate(list structs.List, args []string) (int, structs.List) {
 func execInput(expression structs.List, symbols *map[string]rune,
 	functionTable *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
 
-	//function := new.SExpression[0].(string)
 	// Check for built-in commands
 	switch expression.Head.Data {
 	case 'c':
 		return expression, nil
 	case 'f':
-		value, err := functions.ExecFunction(expression, symbols, functionTable, *bindings)
+		value, err := functions.ExecFunction(expression, symbols, functionTable, bindings)
 		return value, err
 	default:
-		value, err := functions.ExecFunction(expression, symbols, functionTable, *bindings)
+		value, err := functions.ExecFunction(expression, symbols, functionTable, bindings)
 		return value, err
 	}
 }
