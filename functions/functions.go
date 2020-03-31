@@ -345,9 +345,6 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 			num_expr++
 			switch e.Data.(type) {
 			case string:
-				//if number = (*bindings)[e.Data.(string)]; number == "" {
-				//number = e.Data.(string)
-				//}
 				if num_expr == 1 {
 					difference, err = strconv.ParseFloat(e.Data.(string), 64)
 					continue
@@ -428,8 +425,8 @@ func times(expression structs.List, symbols *map[string]rune, functions *map[str
 	for e = e.Next(); e != nil; e = e.Next() {
 		switch e.Data.(type) {
 		case string:
-			if bindings != nil {
-				number = (*bindings)[e.Data.(string)]
+			if number = (*bindings)[e.Data.(string)]; number == "" {
+				number = e.Data.(string)
 				if num, err := strconv.ParseFloat(number, 64); err == nil {
 					product *= num
 				} else {
