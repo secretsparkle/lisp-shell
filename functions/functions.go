@@ -425,8 +425,7 @@ func times(expression structs.List, symbols *map[string]rune, functions *map[str
 	for e = e.Next(); e != nil; e = e.Next() {
 		switch e.Data.(type) {
 		case string:
-			if number = (*bindings)[e.Data.(string)]; number == "" {
-				number = e.Data.(string)
+			if number = (*bindings)[e.Data.(string)]; number != "" {
 				if num, err := strconv.ParseFloat(number, 64); err == nil {
 					product *= num
 				} else {
@@ -452,41 +451,44 @@ func times(expression structs.List, symbols *map[string]rune, functions *map[str
 
 func divide(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
 	bindings *map[string]string) (interface{}, error) {
-	var numer, numerator float64
+	var numerator float64
 	var err error
+	numExpr := 0
 	e := expression.Head
 	e = e.Next()
 
 	if expression.Len() < 3 {
 		return expression, errors.New("Invalid number of arguments.")
 	}
-	if bindings != nil {
-		numer, err = strconv.ParseFloat((*bindings)[e.Data.(string)], 64)
-		if err != nil {
-			return expression, errors.New("Only numbers can be divided.")
-		}
-	} else {
-		numer, err = strconv.ParseFloat(e.Data.(string), 64)
-		if err != nil {
-			return expression, errors.New("Only numbers can be divided.")
-		}
-	}
-	numerator = numer
-	for e = e.Next(); e != nil; e = e.Next() {
+	for ; e != nil; e = e.Next() {
+		numExpr++
 		switch e.Data.(type) {
 		case string:
-			if bindings != nil {
-				number := (*bindings)[e.Data.(string)]
+			if numStr := (*bindings)[e.Data.(string)]; numStr != "" && numExpr == 1 {
+				if numerator, err = strconv.ParseFloat(numStr, 64); err == nil {
+					continue
+				} else {
+					return numStr, err
+				}
+			} else if numExpr == 1 {
+				if numerator, err = strconv.ParseFloat(e.Data.(string), 64); err == nil {
+					continue
+				} else {
+					return e.Data.(string), err
+				}
+			}
+			if number := (*bindings)[e.Data.(string)]; number != "" {
 				if num, err := strconv.ParseFloat(number, 64); err == nil {
+					fmt.Println(numerator, num)
 					numerator /= num
 				} else {
-					return expression, errors.New("Only numbers can be divided.")
+					return e.Data.(string), errors.New("Only numbers can be divided")
 				}
 			} else {
 				if num, err := strconv.ParseFloat(e.Data.(string), 64); err == nil {
 					numerator /= num
 				} else {
-					return expression, errors.New("Only numbers can be divided.")
+					return e.Data.(string), errors.New("Only numbers can be divided")
 				}
 			}
 		default:
@@ -494,7 +496,11 @@ func divide(expression structs.List, symbols *map[string]rune, functions *map[st
 			if err != nil {
 				return 0.0, err
 			}
-			numerator /= subValue.(float64)
+			if numExpr == 1 {
+				numerator = subValue.(float64)
+			} else {
+				numerator /= subValue.(float64)
+			}
 		}
 	}
 	return numerator, nil
