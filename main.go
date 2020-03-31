@@ -58,6 +58,8 @@ func main() {
 		}
 		if value != nil {
 			switch value.(type) {
+			case float64:
+				fmt.Println(value)
 			case string:
 				fmt.Println(value.(string))
 			default:
@@ -82,20 +84,20 @@ func transliterate(list structs.List, args []string) (int, structs.List) {
 		}
 		if strings.Contains(arg, ")\n") {
 			if strings.Contains(arg, "(") {
-				arg = strings.Replace(arg, "(", "", -1)
-				arg = strings.Replace(arg, ")", "", -1)
-				arg = strings.Replace(arg, "\n", "", -1)
+				arg = strings.Trim(arg, "()\n")
 				list.PushBack(arg)
 			} else {
-				arg = strings.Replace(arg, ")\n", "", -1)
-				list.PushBack(strings.Replace(arg, ")", "", -1))
+				arg = strings.Trim(arg, ")\n")
+				list.PushBack(arg)
 			}
 			break
 		} else if strings.Contains(arg, ")") {
 			if strings.Contains(arg, "(") {
-				list.PushBack(strings.TrimRight(strings.TrimLeft(arg, "("), ")\n"))
+				arg = strings.Trim(arg, "()\n")
+				list.PushBack(arg)
 			} else {
-				list.PushBack(strings.TrimRight(arg, ")"))
+				arg = strings.TrimRight(arg, ")")
+				list.PushBack(arg)
 			}
 			break
 		} else if strings.Contains(arg, "'(") && expressionCount == 0 { // beginning

@@ -293,19 +293,20 @@ func plus(expression structs.List, symbols *map[string]rune, functions *map[stri
 	if expression.Len() == 1 {
 		return 0.0, errors.New("Invalid number of arguments.")
 	}
-	sum := 0.0
+	var sum float64
 	e := expression.Head
 	for e = e.Next(); e != nil; e = e.Next() {
 		switch e.Data.(type) {
 		case string:
 			number := e.Data
-			if bindings != nil {
-				number = (*bindings)[number.(string)]
+			if number := (*bindings)[number.(string)]; number == "" {
+				number = e.Data.(string)
 			}
-			if num, err := strconv.ParseFloat(number.(string), 64); err == nil {
-				sum += num
+			if f, err := strconv.ParseFloat(number.(string), 64); err == nil {
+				sum += f
 			} else {
-				return 0.0, errors.New("Only numbers can be added.")
+				fmt.Println("f: ", f)
+				return 0.0, err
 			}
 		default:
 			subValue, err := ExecFunction(e.Data.(structs.List), symbols, functions, bindings)
@@ -321,38 +322,44 @@ func plus(expression structs.List, symbols *map[string]rune, functions *map[stri
 func minus(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
 	bindings *map[string]string) (interface{}, error) {
 	var number string
+	var difference float64
+	var num_expr int
+	var err error
 	e := expression.Head
 	e = e.Next()
 
 	if expression.Len() == 1 {
 		return expression, errors.New("Invalid number of arguments.")
 	} else if expression.Len() == 2 {
-		if bindings != nil {
-			number = (*bindings)[e.Data.(string)]
+		if number = (*bindings)[e.Data.(string)]; number == "" {
+			number = e.Data.(string)
 		}
 		difference, err := strconv.ParseFloat(number, 64)
 		if err != nil {
-			return expression, errors.New("Only numbers can be subtracted.")
+			return expression, err
 		}
 		difference = 0 - difference
 		return difference, nil
 	} else {
-		if bindings != nil {
-			number = (*bindings)[e.Data.(string)]
-		}
-		difference, err := strconv.ParseFloat(e.Data.(string), 64)
-		if err != nil {
-			return expression, errors.New("Only numbers can be subtracted.")
-		}
-		for e = e.Next(); e != nil; e = e.Next() {
+		for ; e != nil; e = e.Next() {
+			num_expr++
 			switch e.Data.(type) {
 			case string:
-				if bindings != nil {
-					number = (*bindings)[e.Data.(string)]
+				//if number = (*bindings)[e.Data.(string)]; number == "" {
+				//number = e.Data.(string)
+				//}
+				if num_expr == 1 {
+					difference, err = strconv.ParseFloat(e.Data.(string), 64)
+					continue
+				}
+				if err != nil {
+					return expression, err
+				}
+				if number = (*bindings)[e.Data.(string)]; number != "" {
 					if num, err := strconv.ParseFloat(number, 64); err == nil {
 						difference -= num
 					} else {
-						return expression, errors.New("Only numbers can be subtracted.")
+						return expression, err
 					}
 				} else {
 					if num, err := strconv.ParseFloat(e.Data.(string), 64); err == nil {
@@ -366,7 +373,11 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 				if err != nil {
 					return 0.0, err
 				}
-				difference -= subValue.(float64)
+				if num_expr == 1 {
+					difference = subValue.(float64)
+				} else {
+					difference -= subValue.(float64)
+				}
 
 			}
 		}
