@@ -15,9 +15,9 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 	switch expression.Head.Data {
 	case "'":
 		return list(expression)
-	case "car": //redo for nesting
+	case "car":
 		return car(expression, symbols, functions, bindings)
-	case "cdr": //redo for nesting
+	case "cdr":
 		return cdr(expression, symbols, functions, bindings)
 	case "cons":
 	case "defun":
@@ -26,7 +26,7 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 		return defvar(expression, symbols, functions, bindings)
 	case "first":
 		return car(expression, symbols, functions, bindings)
-	case "last": // redo for nesting
+	case "last":
 		return last(expression, symbols, functions, bindings)
 	case "list":
 		return list(expression)
@@ -230,10 +230,32 @@ func defvar(expression structs.List, symbols *map[string]rune, functions *map[st
 	e = e.Next()
 	symbol := e.Data.(string)
 	e = e.Next()
-	value := e.Data.(string)
-	(*bindings)[symbol] = value
+	switch e.Data.(type) {
+	case string:
+		value := e.Data.(string)
+		(*bindings)[symbol] = value
 
-	return strings.ToUpper(symbol), nil
+		return strings.ToUpper(symbol), nil
+	default:
+		l := e.Data.(structs.List)
+		retVal, err := ExecFunction(l, symbols, functions, bindings)
+		if err != nil {
+			return nil, err
+		}
+		switch retVal.(type) {
+		case float64:
+			value := strconv.FormatFloat(retVal.(float64), 'f', 6, 64)
+			(*bindings)[symbol] = value
+			return strings.ToUpper(symbol), nil
+		case string:
+			(*bindings)[symbol] = retVal.(string)
+			return strings.ToUpper(symbol), nil
+		default:
+			return nil, errors.New("For the time being, lists cannot be defined as variable values")
+			//(*bindings)[symbol] = retVal.(structs.List)
+			//return strings.ToUpper(symbol), nil
+		}
+	}
 }
 
 func last(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
