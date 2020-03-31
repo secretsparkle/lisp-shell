@@ -215,7 +215,7 @@ func defun(llat structs.List, symbols *map[string]rune,
 
 	fmt.Println("New Function Name: ", funct.Name)
 	fmt.Println("New Function Args: ", funct.Args)
-	fmt.Println("New Function Body: ")
+	fmt.Print("New Function Body: ")
 	structs.PrintList(funct.Body)
 
 	return llat, nil
@@ -239,13 +239,32 @@ func defvar(expression structs.List, symbols *map[string]rune, functions *map[st
 func last(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
 	bindings *map[string]string) (interface{}, error) {
 	e := expression.Head
-	switch e.Next().Data.(type) {
+	e = e.Next()
+	switch e.Data.(type) {
 	case string:
-		return nil, errors.New("last requires a list")
+		if e.Data == "'" {
+			e = e.Next()
+			l := e.Data.(structs.List)
+			e = l.Tail
+			return e.Data, nil
+		} else {
+			return nil, errors.New("last requires a list")
+		}
 	default:
-		e = e.Next()
 		l := e.Data.(structs.List)
-		e = l.Tail
+		e = l.Head
+		if e.Data == "list" {
+			e = l.Tail
+		} else if (*symbols)[e.Data.(string)] == 'f' {
+			retVal, err := ExecFunction(l, symbols, functions, bindings)
+			if err != nil {
+				return nil, err
+			}
+			e = retVal.(structs.List).Tail
+		} else {
+			e = l.Tail
+			return e.Data, nil
+		}
 		return e.Data, nil
 	}
 }
