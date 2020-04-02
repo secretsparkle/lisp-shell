@@ -108,8 +108,11 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 				function.Bindings[arg] = value
 				e = e.Next()
 			}
-			ExecFunction(body, symbols, functions, &function.Bindings)
-			return expression, nil
+			retVal, err := ExecFunction(body, symbols, functions, &function.Bindings)
+			if err != nil {
+				return nil, err
+			}
+			return retVal, nil
 		} else { // UNIX command
 			var statement []string
 			statement = append(statement, command)
@@ -258,26 +261,30 @@ func cons(expression structs.List, symbols *map[string]rune, functions *map[stri
 	return list, nil
 }
 
-func defun(llat structs.List, symbols *map[string]rune,
+func defun(expression structs.List, symbols *map[string]rune,
 	functions *map[string]structs.Function) (structs.List, error) {
 	funct := new(structs.Function)
-	a := llat.Head
-	a = a.Next()
-	funct.Name = a.Data.(string)
-	a = a.Next()
-	params(a.Data.(structs.List), funct, symbols, functions)
-	a = a.Next()
-	funct.Body = a.Data.(structs.List)
+	e := expression.Head
+	e = e.Next()
+	funct.Name = e.Data.(string)
+	e = e.Next()
+	params(e.Data.(structs.List), funct, symbols, functions)
+	e = e.Next()
+	funct.Body = e.Data.(structs.List)
 
 	(*symbols)[funct.Name] = 'f'
 	(*functions)[funct.Name] = *funct
 
-	fmt.Println("New Function Name: ", funct.Name)
-	fmt.Println("New Function Args: ", funct.Args)
-	fmt.Print("New Function Body: ")
-	structs.PrintList(funct.Body)
+	return expression, nil
+}
 
-	return llat, nil
+func params(expression structs.List, funct *structs.Function,
+	symbols *map[string]rune, functions *map[string]structs.Function) error {
+	for e := expression.Head; e != nil; e = e.Next() {
+		funct.Args = append(funct.Args, e.Data.(string))
+	}
+
+	return nil
 }
 
 func defvar(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
@@ -379,17 +386,8 @@ func list(expression structs.List) (structs.List, error) {
 	return newList, nil
 }
 
-func params(lat structs.List, funct *structs.Function, symbols *map[string]rune,
-	functions *map[string]structs.Function) error {
-	for a := lat.Head; a != nil; a = a.Next() {
-		funct.Args = append(funct.Args, a.Data.(string))
-	}
-
-	return nil
-}
-
-func plus(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings *map[string]string) (float64, error) {
+func plus(expression structs.List, symbols *map[string]rune,
+	functions *map[string]structs.Function, bindings *map[string]string) (float64, error) {
 	if expression.Len() == 1 {
 		return 0.0, errors.New("Invalid number of arguments.")
 	}
@@ -399,13 +397,13 @@ func plus(expression structs.List, symbols *map[string]rune, functions *map[stri
 		switch e.Data.(type) {
 		case string:
 			number := e.Data
-			if number := (*bindings)[number.(string)]; number == "" {
+			number = (*bindings)[number.(string)]
+			if number == "" {
 				number = e.Data.(string)
 			}
 			if f, err := strconv.ParseFloat(number.(string), 64); err == nil {
 				sum += f
 			} else {
-				fmt.Println("f: ", f)
 				return 0.0, err
 			}
 		default:
@@ -431,7 +429,9 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 	if expression.Len() == 1 {
 		return expression, errors.New("Invalid number of arguments.")
 	} else if expression.Len() == 2 {
-		if number = (*bindings)[e.Data.(string)]; number == "" {
+		number = (*bindings)[e.Data.(string)]
+		fmt.Println("NUM: ", number)
+		if number == "" {
 			number = e.Data.(string)
 		}
 		difference, err := strconv.ParseFloat(number, 64)
@@ -446,23 +446,30 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 			switch e.Data.(type) {
 			case string:
 				if num_expr == 1 {
-					difference, err = strconv.ParseFloat(e.Data.(string), 64)
-					continue
+					number = (*bindings)[e.Data.(string)]
+					if number == "" {
+						difference, err = strconv.ParseFloat(e.Data.(string), 64)
+						continue
+					} else {
+						difference, err = strconv.ParseFloat(number, 64)
+						continue
+					}
 				}
 				if err != nil {
 					return expression, err
 				}
-				if number = (*bindings)[e.Data.(string)]; number != "" {
-					if num, err := strconv.ParseFloat(number, 64); err == nil {
+				number = (*bindings)[e.Data.(string)]
+				if number == "" {
+					if num, err := strconv.ParseFloat(e.Data.(string), 64); err == nil {
 						difference -= num
 					} else {
 						return expression, err
 					}
 				} else {
-					if num, err := strconv.ParseFloat(e.Data.(string), 64); err == nil {
+					if num, err := strconv.ParseFloat(number, 64); err == nil {
 						difference -= num
 					} else {
-						return expression, errors.New("Only numbers can be subtracted.")
+						return expression, err
 					}
 				}
 			default:
@@ -525,14 +532,15 @@ func times(expression structs.List, symbols *map[string]rune, functions *map[str
 	for e = e.Next(); e != nil; e = e.Next() {
 		switch e.Data.(type) {
 		case string:
-			if number = (*bindings)[e.Data.(string)]; number != "" {
-				if num, err := strconv.ParseFloat(number, 64); err == nil {
+			number = (*bindings)[e.Data.(string)]
+			if number == "" {
+				if num, err := strconv.ParseFloat(e.Data.(string), 64); err == nil {
 					product *= num
 				} else {
 					return expression, errors.New("Only numbers can be multiplied.")
 				}
 			} else {
-				if num, err := strconv.ParseFloat(e.Data.(string), 64); err == nil {
+				if num, err := strconv.ParseFloat(number, 64); err == nil {
 					product *= num
 				} else {
 					return expression, errors.New("Only numbers can be multiplied.")
@@ -564,7 +572,8 @@ func divide(expression structs.List, symbols *map[string]rune, functions *map[st
 		numExpr++
 		switch e.Data.(type) {
 		case string:
-			if numStr := (*bindings)[e.Data.(string)]; numStr != "" && numExpr == 1 {
+			numStr := (*bindings)[e.Data.(string)]
+			if numStr != "" && numExpr == 1 {
 				if numerator, err = strconv.ParseFloat(numStr, 64); err == nil {
 					continue
 				} else {
@@ -579,7 +588,6 @@ func divide(expression structs.List, symbols *map[string]rune, functions *map[st
 			}
 			if number := (*bindings)[e.Data.(string)]; number != "" {
 				if num, err := strconv.ParseFloat(number, 64); err == nil {
-					fmt.Println(numerator, num)
 					numerator /= num
 				} else {
 					return e.Data.(string), errors.New("Only numbers can be divided")
