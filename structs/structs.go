@@ -40,7 +40,6 @@ func (l *List) Len() int {
 	return l.Length
 }
 
-// TODO: Finish PushFront and PushBack
 func (l *List) PushFront(v interface{}) *List {
 	e := new(Element)
 	e.Data = v
@@ -94,11 +93,25 @@ func (l *List) PushBack(v interface{}) *List {
 func PrintList(l List) {
 	for e := l.Head; e != nil; e = e.Next() {
 		switch e.Data.(type) {
+		case float64:
+			if e.Prev() == nil {
+				fmt.Print(e.Data)
+			} else {
+				fmt.Print(" ", e.Data)
+			}
 		case string:
-			fmt.Printf("%s ", e.Data)
+			if e.Prev() == nil {
+				fmt.Print(e.Data)
+			} else {
+				fmt.Print(" ", e.Data)
+			}
 		default:
+			if e.Prev() != nil {
+				fmt.Print(" ")
+			}
+			fmt.Print("(")
 			PrintList(e.Data.(List))
+			fmt.Print(")")
 		}
 	}
-	fmt.Println()
 }
