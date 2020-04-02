@@ -20,6 +20,7 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 	case "cdr":
 		return cdr(expression, symbols, functions, bindings)
 	case "cons":
+		return cons(expression, symbols, functions, bindings)
 	case "defun":
 		return defun(expression, symbols, functions)
 	case "defvar": // redo for nesting
@@ -197,6 +198,64 @@ func cdr(expression structs.List, symbols *map[string]rune, functions *map[strin
 		}
 		return rest, nil
 	}
+}
+
+func cons(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]string) (interface{}, error) {
+	var first structs.List
+	var second structs.List
+	var list structs.List
+
+	e := expression.Head
+	e = e.Next()
+	if e.Data == "'" {
+		e = e.Next()
+	}
+	placeHolder := e
+	switch e.Data.(type) {
+	case structs.List:
+		l := e.Data.(structs.List)
+		e = l.Head
+		if (*symbols)[e.Data.(string)] == 'f' {
+			value, err := ExecFunction(l, symbols, functions, bindings)
+			if err != nil {
+				return nil, err
+			}
+			list.PushBack(value)
+		} else {
+			for ; e != nil; e = e.Next() {
+				first.PushBack(e.Data)
+			}
+			list.PushBack(first)
+		}
+	default:
+		list.PushBack(e.Data)
+	}
+	e = placeHolder
+	e = e.Next()
+	if e.Data == "'" {
+		e = e.Next()
+	}
+	switch e.Data.(type) {
+	case structs.List:
+		l := e.Data.(structs.List)
+		e = l.Head
+		if (*symbols)[e.Data.(string)] == 'f' {
+			value, err := ExecFunction(l, symbols, functions, bindings)
+			if err != nil {
+				return nil, err
+			}
+			list.PushBack(value)
+		} else {
+			for ; e != nil; e = e.Next() {
+				second.PushBack(e.Data)
+			}
+			list.PushBack(second)
+		}
+	default:
+		list.PushBack(e.Data)
+	}
+	return list, nil
 }
 
 func defun(llat structs.List, symbols *map[string]rune,

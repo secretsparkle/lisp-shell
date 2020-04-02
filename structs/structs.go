@@ -93,14 +93,25 @@ func (l *List) PushBack(v interface{}) *List {
 func PrintList(l List) {
 	for e := l.Head; e != nil; e = e.Next() {
 		switch e.Data.(type) {
-		case string:
-			if e == l.Tail {
-				fmt.Printf("%s", e.Data)
+		case float64:
+			if e.Prev() == nil {
+				fmt.Print(e.Data)
 			} else {
-				fmt.Printf("%s ", e.Data)
+				fmt.Print(" ", e.Data)
+			}
+		case string:
+			if e.Prev() == nil {
+				fmt.Print(e.Data)
+			} else {
+				fmt.Print(" ", e.Data)
 			}
 		default:
+			if e.Prev() != nil {
+				fmt.Print(" ")
+			}
+			fmt.Print("(")
 			PrintList(e.Data.(List))
+			fmt.Print(")")
 		}
 	}
 }
