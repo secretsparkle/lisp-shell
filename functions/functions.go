@@ -360,29 +360,23 @@ func last(expression structs.List, symbols *map[string]rune, functions *map[stri
 // will need to add in symbols, functions and bindings later
 func list(expression structs.List) (structs.List, error) {
 	var newList structs.List
-	newList = *newList.PushBack("(")
-	for a := expression.Head; a != nil; a = a.Next() {
-		if a.Data == "list" {
+	for e := expression.Head; e != nil; e = e.Next() {
+		if e.Data == "list" {
+			continue
+		} else if e.Data == "'" {
 			continue
 		}
-		switch a.Data.(type) {
+		switch e.Data.(type) {
 		case string:
-			if a.Next() == nil {
-				newList = *newList.PushBack(")")
-			} else {
-				newList = *newList.PushBack(a.Data)
-				newList = *newList.PushBack(" ")
-			}
-
+			newList.PushBack(e.Data)
 		default:
-			if subList, err := list(a.Data.(structs.List)); err == nil {
-				newList = *newList.PushBack(subList)
+			if subList, err := list(e.Data.(structs.List)); err == nil {
+				newList.PushBack(subList)
 			} else {
 				return subList, err
 			}
 		}
 	}
-	newList = *newList.PushBack("\n")
 	return newList, nil
 }
 

@@ -101,6 +101,7 @@ func transliterate(list structs.List, args []string) (int, structs.List) {
 			}
 			break
 		} else if strings.Contains(arg, "'(") && expressionCount == 0 { // beginning
+			list.PushBack("'")
 			list.PushBack(arg[2:])
 			expressionCount++
 		} else if strings.Contains(arg, "(") && expressionCount == 0 { // beginning
