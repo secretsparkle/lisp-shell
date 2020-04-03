@@ -58,6 +58,12 @@ func main() {
 		}
 		if value != nil {
 			switch value.(type) {
+			case bool:
+				if value == true {
+					fmt.Println("T")
+				} else {
+					fmt.Println("NIL")
+				}
 			case float64:
 				fmt.Println(value)
 			case string:
