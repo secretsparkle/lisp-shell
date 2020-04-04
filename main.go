@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./conditionals"
 	"./functions"
 	"./parse"
 	"./structs"
@@ -138,18 +139,18 @@ func transliterate(list structs.List, args []string) (int, structs.List) {
 	return currIndex, list
 }
 
-func execInput(expression structs.List, symbols *map[string]rune,
+func ExecInput(expression structs.List, symbols *map[string]rune,
 	functionTable *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
 
 	// Check for built-in commands
-	switch expression.Head.Data {
+	switch (*symbols)[expression.Head.Data.(string)] {
 	case 'c':
-		return expression, nil
+		value, err := conditionals.EvalConditional(expression, symbols, functionTable, bindings)
+		return value, err
 	case 'f':
 		value, err := functions.ExecFunction(expression, symbols, functionTable, bindings)
 		return value, err
 	default:
-		value, err := functions.ExecFunction(expression, symbols, functionTable, bindings)
-		return value, err
+		return expression, nil
 	}
 }
