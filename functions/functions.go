@@ -156,7 +156,6 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 
 func car(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
 	bindings *map[string]string) (interface{}, error) {
-	// honestly will probably need to be reworked in the future
 	e := expression.Head
 	e = e.Next()
 	if e.Data == "'" {
@@ -169,7 +168,9 @@ func car(expression structs.List, symbols *map[string]rune, functions *map[strin
 		l := e.Data.(structs.List)
 		e = l.Head
 		if e.Data == "list" {
-			e = l.Head.Next()
+			e = e.Next()
+		} else if e.Data == "'" {
+			e = e.Next()
 		} else if (*symbols)[e.Data.(string)] == 'f' {
 			retVal, err := ExecFunction(l, symbols, functions, bindings)
 			if err != nil {
@@ -196,7 +197,9 @@ func cdr(expression structs.List, symbols *map[string]rune, functions *map[strin
 		l := e.Data.(structs.List)
 		e = l.Head
 		if e.Data == "list" {
-			e = l.Head.Next()
+			e = e.Next()
+		} else if e.Data == "'" {
+			e = e.Next()
 		} else if (*symbols)[e.Data.(string)] == 'f' {
 			retVal, err := ExecFunction(l, symbols, functions, bindings)
 			if err != nil {
@@ -229,6 +232,9 @@ func cons(expression structs.List, symbols *map[string]rune, functions *map[stri
 	case structs.List:
 		l := e.Data.(structs.List)
 		e = l.Head
+		if e.Data == "'" {
+			e = e.Next()
+		}
 		if (*symbols)[e.Data.(string)] == 'f' {
 			value, err := ExecFunction(l, symbols, functions, bindings)
 			if err != nil {
@@ -253,6 +259,9 @@ func cons(expression structs.List, symbols *map[string]rune, functions *map[stri
 	case structs.List:
 		l := e.Data.(structs.List)
 		e = l.Head
+		if e.Data == "'" {
+			e = e.Next()
+		}
 		if (*symbols)[e.Data.(string)] == 'f' {
 			value, err := ExecFunction(l, symbols, functions, bindings)
 			if err != nil {
