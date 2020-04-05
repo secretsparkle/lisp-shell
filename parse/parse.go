@@ -1,8 +1,10 @@
 package parse
 
 import (
+	"../structs"
 	"errors"
 	"regexp"
+	"strings"
 )
 
 func Parse(input string) error {
@@ -84,4 +86,60 @@ func atom(token string) bool {
 		return false
 	}
 	return true
+}
+
+func Transliterate(list structs.List, args []string) (int, structs.List) {
+	expressionCount := 0
+	catchUpIndex := 0
+	currIndex := 0
+
+	for index, arg := range args {
+		currIndex = index
+		if catchUpIndex > 0 {
+			catchUpIndex--
+			continue
+		}
+		if strings.Contains(arg, ")\n") {
+			if strings.Contains(arg, "(") {
+				arg = strings.Trim(arg, "()\n")
+				list.PushBack(arg)
+			} else {
+				arg = strings.Trim(arg, ")\n")
+				list.PushBack(arg)
+			}
+			break
+		} else if strings.Contains(arg, ")") {
+			if strings.Contains(arg, "(") {
+				arg = strings.Trim(arg, "()\n")
+				list.PushBack(arg)
+			} else {
+				arg = strings.TrimRight(arg, ")")
+				list.PushBack(arg)
+			}
+			break
+		} else if strings.Contains(arg, "'(") && expressionCount == 0 { // beginning
+			list.PushBack("'")
+			list.PushBack(arg[2:])
+			expressionCount++
+		} else if strings.Contains(arg, "(") && expressionCount == 0 { // beginning
+			list.PushBack(arg[1:])
+			expressionCount++
+		} else if strings.Contains(arg, "'(") && expressionCount > 0 {
+			var newIndex int
+			var innerList structs.List
+			list.PushBack("'")
+			newIndex, innerList = Transliterate(innerList, args[index:])
+			catchUpIndex = newIndex
+			list.PushBack(innerList)
+		} else if strings.Contains(arg, "(") && expressionCount > 0 {
+			var newIndex int
+			var innerList structs.List
+			newIndex, innerList = Transliterate(innerList, args[index:])
+			catchUpIndex = newIndex
+			list.PushBack(innerList)
+		} else {
+			list.PushBack(strings.TrimRight(arg, ")"))
+		}
+	}
+	return currIndex, list
 }
