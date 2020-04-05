@@ -356,6 +356,7 @@ func gt_or_lt(expression structs.List, symbols *map[string]rune,
 			if err != nil {
 				return nil, err
 			}
+			// need exception code here
 			a = retVal.(float64)
 		} else {
 			return nil, errors.New("Lists are not valid numerical values")
@@ -385,6 +386,7 @@ func gt_or_lt(expression structs.List, symbols *map[string]rune,
 			if err != nil {
 				return nil, err
 			}
+			// need exception code here
 			b = retVal.(float64)
 		} else {
 			return nil, errors.New("Lists are not valid numerical values")

@@ -30,6 +30,8 @@ func main() {
 		"rest":    'f',
 		"last":    'f',
 		"reverse": 'f',
+		"<":       'f',
+		">":       'f',
 	}
 
 	functions := make(map[string]structs.Function)
