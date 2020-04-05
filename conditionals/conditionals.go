@@ -3,6 +3,7 @@ package conditionals
 import (
 	"../functions"
 	"../structs"
+	"errors"
 )
 
 func ExecInput(expression structs.List, symbols *map[string]rune,
@@ -41,6 +42,11 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 	value, err := ExecInput(c, symbols, functionTable, bindings)
 	if err != nil {
 		return nil, err
+	}
+	switch value.(type) {
+	case bool:
+	default:
+		return nil, errors.New("The if conditional requires a boolean value")
 	}
 
 	e = e.Next()
