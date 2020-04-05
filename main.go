@@ -14,22 +14,25 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 
 	symbols := map[string]rune{
-		"if":      'c',
+		"car":     'f',
+		"cdr":     'f',
 		"cond":    'c',
-		"defvar":  'f',
+		"cons":    'f',
 		"defun":   'f',
+		"defvar":  'f',
+		"equal":   'f',
+		"first":   'f',
+		"if":      'c',
+		"last":    'f',
+		"map":     'f',
+		"quote":   'f',
+		"rest":    'f',
+		"reverse": 'f',
+		"=":       'f',
 		"+":       'f',
 		"-":       'f',
 		"*":       'f',
 		"/":       'f',
-		"quote":   'f',
-		"cons":    'f',
-		"car":     'f',
-		"cdr":     'f',
-		"first":   'f',
-		"rest":    'f',
-		"last":    'f',
-		"reverse": 'f',
 	}
 
 	functions := make(map[string]structs.Function)
