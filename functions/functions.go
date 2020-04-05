@@ -53,6 +53,12 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 	case "/":
 		result, err := divide(expression, symbols, functions, bindings)
 		return result, err
+	case ">":
+		result, err := gt_or_lt(expression, symbols, functions, bindings, ">")
+		return result, err
+	case "<":
+		result, err := gt_or_lt(expression, symbols, functions, bindings, "<")
+		return result, err
 	case "cd":
 		// 'cd' to home dir with empty path not yet supported.
 		if expression.Len() < 2 {
@@ -425,6 +431,79 @@ func equal(expression structs.List, symbols *map[string]rune,
 		return false, nil
 	}
 }
+
+func gt_or_lt(expression structs.List, symbols *map[string]rune,
+	functions *map[string]structs.Function, bindings *map[string]string, fun string) (interface{}, error) {
+	var a, b float64
+	var err error
+	e := expression.Head
+	e = e.Next()
+	if e.Data == "'" {
+		return nil, errors.New("> requires valid numerical values, not lists")
+	}
+	switch e.Data.(type) {
+	case float64:
+		a = e.Data.(float64)
+	case string:
+		a, err = strconv.ParseFloat(e.Data.(string), 64)
+		if err != nil {
+			return nil, errors.New("Cannot parse invalid value")
+		}
+	case structs.List:
+		d := e
+		l := e.Data.(structs.List)
+		e = l.Head
+		if (*symbols)[e.Data.(string)] == 'f' {
+			retVal, err := ExecFunction(l, symbols, functions, bindings)
+			if err != nil {
+				return nil, err
+			}
+			// need exception code here
+			a = retVal.(float64)
+		} else {
+			return nil, errors.New("Lists are not valid numerical values")
+		}
+		e = d
+	default:
+		return nil, errors.New("> requires a number value")
+	}
+	e = e.Next()
+	if e.Data == "'" {
+		return nil, errors.New("> requires valid numerical values, not lists")
+	}
+	switch e.Data.(type) {
+	case float64:
+		b = e.Data.(float64)
+	case string:
+		b, err = strconv.ParseFloat(e.Data.(string), 64)
+		if err != nil {
+			return nil, errors.New("Cannot parse invalid value")
+		}
+	case structs.List:
+		d := e
+		l := e.Data.(structs.List)
+		e = l.Head
+		if (*symbols)[e.Data.(string)] == 'f' {
+			retVal, err := ExecFunction(l, symbols, functions, bindings)
+			if err != nil {
+				return nil, err
+			}
+			// need exception code here
+			b = retVal.(float64)
+		} else {
+			return nil, errors.New("Lists are not valid numerical values")
+		}
+		e = d
+	default:
+		return nil, errors.New("> requires a number value")
+	}
+	if fun == ">" {
+		return a > b, nil
+	} else {
+		return a < b, nil
+	}
+}
+
 
 func last(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
 	bindings *map[string]string) (interface{}, error) {

@@ -33,6 +33,8 @@ func main() {
 		"-":       'f',
 		"*":       'f',
 		"/":       'f',
+    "<":       'f',
+    ">":       'f',
 	}
 
 	functions := make(map[string]structs.Function)
