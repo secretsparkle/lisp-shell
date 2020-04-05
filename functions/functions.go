@@ -25,6 +25,8 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 		return defun(expression, symbols, functions)
 	case "defvar": // redo for nesting
 		return defvar(expression, symbols, functions, bindings)
+	case "equal":
+		return equal(expression, symbols, functions, bindings)
 	case "first":
 		return car(expression, symbols, functions, bindings)
 	case "last":
@@ -37,6 +39,8 @@ func ExecFunction(expression structs.List, symbols *map[string]rune,
 		return cdr(expression, symbols, functions, bindings)
 	case "reverse": // redo for nesting
 		return reverse(expression, symbols, functions, bindings)
+	case "=":
+		return equal(expression, symbols, functions, bindings)
 	case "+":
 		sum, err := plus(expression, symbols, functions, bindings)
 		return sum, err
@@ -287,8 +291,8 @@ func params(expression structs.List, funct *structs.Function,
 	return nil
 }
 
-func defvar(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings *map[string]string) (interface{}, error) {
+func defvar(expression structs.List, symbols *map[string]rune,
+	functions *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
 	if expression.Len() != 3 {
 		return nil, errors.New("Invalid number of arguments supplied to defvar")
 	}
@@ -321,6 +325,104 @@ func defvar(expression structs.List, symbols *map[string]rune, functions *map[st
 			//(*bindings)[symbol] = retVal.(structs.List)
 			//return strings.ToUpper(symbol), nil
 		}
+	}
+}
+
+func equal(expression structs.List, symbols *map[string]rune,
+	functions *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
+	var a, b interface{}
+	e := expression.Head
+	e = e.Next()
+	if e.Data == "'" {
+		e = e.Next()
+	}
+
+	switch e.Data.(type) {
+	case bool:
+		a = e.Data.(bool)
+	case float64:
+		a = e.Data.(float64)
+	case string:
+		a = e.Data.(string)
+	case structs.List:
+		d := e
+		l := e.Data.(structs.List)
+		e = l.Head
+		if (*symbols)[e.Data.(string)] == 'f' {
+			retVal, err := ExecFunction(l, symbols, functions, bindings)
+			if err != nil {
+				return nil, err
+			}
+			a = retVal
+		} else {
+			a = l
+		}
+		e = d
+	}
+	e = e.Next()
+	if e.Data == "'" {
+		e = e.Next()
+	}
+	switch e.Data.(type) {
+	case bool:
+		b = e.Data.(bool)
+	case float64:
+		b = e.Data.(float64)
+	case string:
+		b = e.Data.(string)
+	case structs.List:
+		l := e.Data.(structs.List)
+		e = l.Head
+		if (*symbols)[e.Data.(string)] == 'f' {
+			retVal, err := ExecFunction(l, symbols, functions, bindings)
+			if err != nil {
+				return nil, err
+			}
+			b = retVal
+		} else {
+			b = l
+		}
+	}
+	switch a.(type) {
+	case bool:
+		if a == b {
+			return true, nil
+		} else {
+			return false, nil
+		}
+	case float64:
+		if a == b {
+			return true, nil
+		} else {
+			return false, nil
+		}
+	case string:
+		if a == b {
+			return true, nil
+		} else {
+			return false, nil
+		}
+	case structs.List:
+		l := a.(structs.List)
+		m := b.(structs.List)
+		if l.Len() != m.Len() {
+			return false, nil
+		}
+		d := l.Head
+		e := m.Head
+		for ; d != nil && e != nil; d, e = d.Next(), e.Next() {
+			if d.Data == e.Data {
+				continue
+			} else {
+				return false, nil
+			}
+		}
+		return true, nil
+	}
+	if a == b {
+		return true, nil
+	} else {
+		return false, nil
 	}
 }
 
