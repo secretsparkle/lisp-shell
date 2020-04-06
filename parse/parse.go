@@ -88,7 +88,7 @@ func atom(token string) bool {
 	return true
 }
 
-func Transliterate(list structs.List, args []string) (int, structs.List) {
+func Transliterate(list structs.List, args []string, openParen int) (int, structs.List) {
 	expressionCount := 0
 	catchUpIndex := 0
 	currIndex := 0
@@ -120,25 +120,35 @@ func Transliterate(list structs.List, args []string) (int, structs.List) {
 		} else if strings.Contains(arg, "'(") && expressionCount == 0 { // beginning
 			list.PushBack("'")
 			list.PushBack(arg[2:])
+			openParen++
 			expressionCount++
 		} else if strings.Contains(arg, "(") && expressionCount == 0 { // beginning
 			list.PushBack(arg[1:])
+			openParen++
 			expressionCount++
 		} else if strings.Contains(arg, "'(") && expressionCount > 0 {
 			var newIndex int
 			var innerList structs.List
 			list.PushBack("'")
-			newIndex, innerList = Transliterate(innerList, args[index:])
+			openParen++
+			newIndex, innerList = Transliterate(innerList, args[index:], openParen)
+			openParen--
 			catchUpIndex = newIndex
 			list.PushBack(innerList)
 		} else if strings.Contains(arg, "(") && expressionCount > 0 {
 			var newIndex int
 			var innerList structs.List
-			newIndex, innerList = Transliterate(innerList, args[index:])
+			openParen++
+			newIndex, innerList = Transliterate(innerList, args[index:], openParen)
+			openParen--
 			catchUpIndex = newIndex
 			list.PushBack(innerList)
 		} else {
-			list.PushBack(strings.TrimRight(arg, ")"))
+			if strings.Contains(arg, ")") {
+				list.PushBack(strings.TrimRight(arg, ")"))
+			} else {
+				list.PushBack(arg)
+			}
 		}
 	}
 	return currIndex, list

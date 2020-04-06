@@ -33,8 +33,8 @@ func main() {
 		"-":       'f',
 		"*":       'f',
 		"/":       'f',
-    "<":       'f',
-    ">":       'f',
+		"<":       'f',
+		">":       'f',
 	}
 
 	functions := make(map[string]structs.Function)
@@ -51,7 +51,7 @@ func main() {
 		var s_expressions structs.List
 		var value interface{}
 		args := strings.Split(input, " ")
-		_, s_expressions = parse.Transliterate(s_expressions, args)
+		_, s_expressions = parse.Transliterate(s_expressions, args, 0)
 
 		if err = parse.Parse(input); err != nil {
 			fmt.Fprintln(os.Stderr, err)

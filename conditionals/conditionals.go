@@ -36,6 +36,7 @@ func EvalConditional(expression structs.List, symbols *map[string]rune,
 func if_statement(expression structs.List, symbols *map[string]rune,
 	functionTable *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
 	e := expression.Head
+	structs.PrintList(expression)
 
 	e = e.Next()
 	c := e.Data.(structs.List)
@@ -43,6 +44,7 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 	if err != nil {
 		return nil, err
 	}
+	// must return bool
 	switch value.(type) {
 	case bool:
 	default:
