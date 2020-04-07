@@ -93,8 +93,9 @@ func Transliterate(list structs.List, args []string, index int) (structs.List, i
 		index++
 		if token == "(" {
 			var newList structs.List
-			if subList, index, err := Transliterate(newList, args[index:], index); err == nil {
+			if subList, newIndex, err := Transliterate(newList, args[index:], 0); err == nil {
 				list.PushBack(subList)
+				index += newIndex
 			} else {
 				return subList, index, err
 			}
@@ -105,83 +106,3 @@ func Transliterate(list structs.List, args []string, index int) (structs.List, i
 		}
 	}
 }
-
-/*
-func transliterate(list structs.List, args []string, openParen int) (int, structs.List) {
-	expressionCount := 0
-	catchUpIndex := 0
-	currIndex := 0
-
-	for index, arg := range args {
-		currIndex = index
-		if catchUpIndex > 0 {
-			catchUpIndex--
-			continue
-		}
-		if strings.Contains(arg, ")\n") {
-			openParen--
-			if strings.Contains(arg, "(") {
-				arg = strings.Trim(arg, "()\n")
-				list.PushBack(arg)
-			} else {
-				arg = strings.Trim(arg, ")\n")
-				list.PushBack(arg)
-			}
-			if openParen > 1 {
-				continue
-			} else {
-				break
-			}
-		} else if strings.Contains(arg, ")") {
-			openParen--
-			if strings.Contains(arg, "(") {
-				arg = strings.Trim(arg, "()\n")
-				list.PushBack(arg)
-			} else {
-				arg = strings.TrimRight(arg, ")")
-				list.PushBack(arg)
-			}
-			if openParen > 1 {
-				continue
-			} else {
-				break
-			}
-		} else if strings.Contains(arg, "'(") && expressionCount == 0 { // beginning
-			list.PushBack("'")
-			list.PushBack(arg[2:])
-			expressionCount++
-		} else if strings.Contains(arg, "(") && expressionCount == 0 { // beginning
-			list.PushBack(arg[1:])
-			expressionCount++
-		} else if strings.Contains(arg, "'(") && expressionCount > 0 {
-			var newIndex int
-			var innerList structs.List
-			list.PushBack("'")
-			openParen++
-			newIndex, innerList = Transliterate(innerList, args[index:], openParen)
-			catchUpIndex = newIndex
-			list.PushBack(innerList)
-		} else if strings.Contains(arg, "(") && expressionCount > 0 {
-			var newIndex int
-			var innerList structs.List
-			openParen++
-			newIndex, innerList = Transliterate(innerList, args[index:], openParen)
-			catchUpIndex = newIndex
-			list.PushBack(innerList)
-		} else {
-			if strings.Contains(arg, ")") {
-				openParen--
-				list.PushBack(strings.TrimRight(arg, ")"))
-				if openParen > 1 {
-					continue
-				} else {
-					break
-				}
-			} else {
-				list.PushBack(arg)
-			}
-		}
-	}
-	return currIndex, list
-}
-*/
