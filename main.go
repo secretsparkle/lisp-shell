@@ -4,15 +4,14 @@ import (
 	"./conditionals"
 	"./parse"
 	"./structs"
+	"./utils"
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 )
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
-
 	symbols := map[string]rune{
 		"car":     'f',
 		"cdr":     'f',
@@ -33,14 +32,14 @@ func main() {
 		"-":       'f',
 		"*":       'f',
 		"/":       'f',
-    "<":       'f',
-    ">":       'f',
+		"<":       'f',
+		">":       'f',
 	}
-
 	functions := make(map[string]structs.Function)
 	bindings := make(map[string]string)
 
 	for {
+
 		fmt.Print("> ")
 		// Read the keyboard input
 		input, err := reader.ReadString('\n')
@@ -50,13 +49,15 @@ func main() {
 
 		var s_expressions structs.List
 		var value interface{}
-		args := strings.Split(input, " ")
-		_, s_expressions = parse.Transliterate(s_expressions, args)
+		sep := []rune("() ")
+		args := util.SplitWith(input, sep)
+		args = util.RemoveMember(args, " ")
+		args = args[1:] //shave off that opening paren
+		s_expressions, _, err = parse.Transliterate(s_expressions, args, 0)
 
 		if err = parse.Parse(input); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
-
 		// Handle the execution of the input.
 		if value, err = conditionals.ExecInput(s_expressions, &symbols, &functions, &bindings); err != nil {
 			fmt.Fprintln(os.Stderr, err)
