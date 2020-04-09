@@ -226,6 +226,12 @@ func cons(expression structs.List, symbols *map[string]rune, functions *map[stri
 	}
 	placeHolder := e
 	switch e.Data.(type) {
+	case string:
+		a := (*bindings)[e.Data.(string)]
+		if a == "" {
+			a = e.Data.(string)
+		}
+		list.PushBack(a)
 	case structs.List:
 		l := e.Data.(structs.List)
 		e = l.Head
@@ -250,6 +256,12 @@ func cons(expression structs.List, symbols *map[string]rune, functions *map[stri
 		e = e.Next()
 	}
 	switch e.Data.(type) {
+	case string:
+		a := (*bindings)[e.Data.(string)]
+		if a == "" {
+			a = e.Data.(string)
+		}
+		list.PushBack(a)
 	case structs.List:
 		l := e.Data.(structs.List)
 		e = l.Head
@@ -278,7 +290,7 @@ func defun(expression structs.List, symbols *map[string]rune,
 	e = e.Next()
 	funct.Name = e.Data.(string)
 	e = e.Next()
-	params(e.Data.(structs.List), funct, symbols, functions)
+	defunParamHelper(e.Data.(structs.List), funct, symbols, functions)
 	e = e.Next()
 	funct.Body = e.Data.(structs.List)
 
@@ -288,7 +300,7 @@ func defun(expression structs.List, symbols *map[string]rune,
 	return expression, nil
 }
 
-func params(expression structs.List, funct *structs.Function,
+func defunParamHelper(expression structs.List, funct *structs.Function,
 	symbols *map[string]rune, functions *map[string]structs.Function) error {
 	for e := expression.Head; e != nil; e = e.Next() {
 		funct.Args = append(funct.Args, e.Data.(string))
@@ -337,6 +349,7 @@ func defvar(expression structs.List, symbols *map[string]rune,
 func equal(expression structs.List, symbols *map[string]rune,
 	functions *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
 	var a, b interface{}
+
 	e := expression.Head
 	e = e.Next()
 	if e.Data == "'" {
@@ -349,7 +362,12 @@ func equal(expression structs.List, symbols *map[string]rune,
 	case float64:
 		a = e.Data.(float64)
 	case string:
-		a = e.Data.(string)
+		if a = (*bindings)[e.Data.(string)]; a != "" {
+			a, _ = strconv.ParseFloat(a.(string), 64)
+		} else {
+			a = e.Data.(string)
+			a, _ = strconv.ParseFloat(a.(string), 64)
+		}
 	case structs.List:
 		d := e
 		l := e.Data.(structs.List)
@@ -375,7 +393,12 @@ func equal(expression structs.List, symbols *map[string]rune,
 	case float64:
 		b = e.Data.(float64)
 	case string:
-		b = e.Data.(string)
+		if b = (*bindings)[e.Data.(string)]; b != "" {
+			b, _ = strconv.ParseFloat(b.(string), 64)
+		} else {
+			b = e.Data.(string)
+			b, _ = strconv.ParseFloat(b.(string), 64)
+		}
 	case structs.List:
 		l := e.Data.(structs.List)
 		e = l.Head
@@ -436,6 +459,8 @@ func gt_or_lt(expression structs.List, symbols *map[string]rune,
 	functions *map[string]structs.Function, bindings *map[string]string, fun string) (interface{}, error) {
 	var a, b float64
 	var err error
+	var str interface{}
+
 	e := expression.Head
 	e = e.Next()
 	if e.Data == "'" {
@@ -445,9 +470,16 @@ func gt_or_lt(expression structs.List, symbols *map[string]rune,
 	case float64:
 		a = e.Data.(float64)
 	case string:
-		a, err = strconv.ParseFloat(e.Data.(string), 64)
-		if err != nil {
-			return nil, errors.New("Cannot parse invalid value")
+		if str = (*bindings)[e.Data.(string)]; str != "" {
+			a, err = strconv.ParseFloat(str.(string), 64)
+			if err != nil {
+				return nil, errors.New("Cannot parse invalid value")
+			}
+		} else {
+			a, err = strconv.ParseFloat(e.Data.(string), 64)
+			if err != nil {
+				return nil, errors.New("Cannot parse invalid value")
+			}
 		}
 	case structs.List:
 		d := e
@@ -475,9 +507,16 @@ func gt_or_lt(expression structs.List, symbols *map[string]rune,
 	case float64:
 		b = e.Data.(float64)
 	case string:
-		b, err = strconv.ParseFloat(e.Data.(string), 64)
-		if err != nil {
-			return nil, errors.New("Cannot parse invalid value")
+		if str = (*bindings)[e.Data.(string)]; str != "" {
+			b, err = strconv.ParseFloat(str.(string), 64)
+			if err != nil {
+				return nil, errors.New("Cannot parse invalid value")
+			}
+		} else {
+			b, err = strconv.ParseFloat(e.Data.(string), 64)
+			if err != nil {
+				return nil, errors.New("Cannot parse invalid value")
+			}
 		}
 	case structs.List:
 		d := e
@@ -503,7 +542,6 @@ func gt_or_lt(expression structs.List, symbols *map[string]rune,
 		return a < b, nil
 	}
 }
-
 
 func last(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
 	bindings *map[string]string) (interface{}, error) {
