@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"../structs"
 	"errors"
 	"regexp"
 )
@@ -84,4 +85,24 @@ func atom(token string) bool {
 		return false
 	}
 	return true
+}
+
+func Transliterate(list structs.List, args []string, index int) (structs.List, int, error) {
+	for {
+		token := args[index]
+		index++
+		if token == "(" {
+			var newList structs.List
+			if subList, newIndex, err := Transliterate(newList, args[index:], 0); err == nil {
+				list.PushBack(subList)
+				index += newIndex
+			} else {
+				return subList, index, err
+			}
+		} else if token == ")" {
+			return list, index, nil
+		} else {
+			list.PushBack(token)
+		}
+	}
 }
