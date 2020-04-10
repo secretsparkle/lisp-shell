@@ -441,13 +441,20 @@ func equal(expression structs.List, symbols *map[string]rune,
 			return false, nil
 		}
 	case structs.List:
+		var d, e *(structs.Element)
 		l := a.(structs.List)
 		m := b.(structs.List)
-		if l.Len() != m.Len() {
-			return false, nil
+		if l.Head.Data == "list" {
+			d = l.Head.Next()
+		} else {
+			d = l.Head
 		}
-		d := l.Head
-		e := m.Head
+		if m.Head.Data == "list" {
+			e = m.Head.Next()
+		} else {
+			e = m.Head
+		}
+		// can we fail by length at all?
 		for ; d != nil && e != nil; d, e = d.Next(), e.Next() {
 			if d.Data == e.Data {
 				continue
