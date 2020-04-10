@@ -50,8 +50,14 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 	}
 
 	e = e.Next()
+	if e.Data == "'" {
+		e = e.Next()
+	}
 	t := e.Data.(structs.List)
 	e = e.Next()
+	if e.Data == "'" {
+		e = e.Next()
+	}
 	f := e.Data.(structs.List)
 
 	if value == true {

@@ -37,3 +37,11 @@ func RemoveMember(list []string, remove string) []string {
 	}
 	return newList
 }
+
+func CheckForSymbol(bindings *map[string]string, value string) string {
+	if str := (*bindings)[value]; str == "" {
+		return value
+	} else {
+		return str
+	}
+}
