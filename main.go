@@ -12,6 +12,7 @@ import (
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
+	// should this be global?
 	symbols := map[string]rune{
 		"car":     'f',
 		"cdr":     'f',
