@@ -1,5 +1,7 @@
 package util
 
+import "unicode"
+
 // split but keep seperators
 func SplitWith(str string, sep []rune) []string {
 	var strArr []string
@@ -36,4 +38,31 @@ func RemoveMember(list []string, remove string) []string {
 		}
 	}
 	return newList
+}
+
+func IsAlphabetic(s string) bool {
+	for _, r := range s {
+		if !unicode.IsLetter(r) {
+			return false
+		}
+	}
+	return true
+}
+
+func IsNumber(s string) bool {
+	for _, r := range s {
+		if !unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return true
+}
+
+func AnySymbol(s string) bool {
+	for _, r := range s {
+		if unicode.IsSymbol(r) {
+			return true
+		}
+	}
+	return false
 }

@@ -13,6 +13,7 @@ import (
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 	symbols := map[string]rune{
+		"and":     'c',
 		"car":     'f',
 		"cdr":     'f',
 		"cond":    'c',
