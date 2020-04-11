@@ -83,6 +83,8 @@ func and(expression structs.List, symbols *map[string]rune, functionTable *map[s
 				} else {
 					last = value
 				}
+			} else {
+				return nil, errors.New("Invalid list construction")
 			}
 		default:
 			if e.Data == false {
