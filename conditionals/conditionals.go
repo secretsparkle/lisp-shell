@@ -5,6 +5,7 @@ import (
 	"../structs"
 	"../utils"
 	"errors"
+	//"fmt"
 )
 
 func ExecInput(expression structs.List, symbols *map[string]rune,
@@ -69,8 +70,12 @@ func and(expression structs.List, symbols *map[string]rune, functionTable *map[s
 		case structs.List:
 			if isQuoted == true {
 				last = e.Data.(structs.List)
-			} else if (*symbols)[e.Data.(string)] == 'f' || (*symbols)[e.Data.(string)] == 'c' {
-				value, err := ExecInput(e.Data.(structs.List), symbols, functionTable, bindings)
+				continue
+			}
+			l := e.Data.(structs.List)
+			e = l.Head
+			if (*symbols)[e.Data.(string)] == 'f' || (*symbols)[e.Data.(string)] == 'c' {
+				value, err := ExecInput(l, symbols, functionTable, bindings)
 				if err != nil {
 					return nil, err
 				} else if value == false {
