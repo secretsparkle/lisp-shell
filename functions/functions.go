@@ -721,9 +721,7 @@ func reverse(expression structs.List, symbols *map[string]rune, functions *map[s
 		e = e.Next()
 	}
 	switch e.Data.(type) {
-	case string:
-		return nil, errors.New("reverse requires a list")
-	default:
+	case structs.List:
 		retVal := e.Data.(structs.List)
 		e = retVal.Head
 		if e.Data == "list" {
@@ -737,9 +735,14 @@ func reverse(expression structs.List, symbols *map[string]rune, functions *map[s
 		}
 		e = retVal.Tail
 		for ; e != nil; e = e.Prev() {
+			if e.Data == "'" || e.Data == "list" {
+				continue
+			}
 			reversed.PushBack(e.Data)
 		}
 		return reversed, nil
+	default:
+		return nil, errors.New("reverse requires a list")
 	}
 }
 
