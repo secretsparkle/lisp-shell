@@ -44,8 +44,10 @@ func and(expression structs.List, symbols *map[string]rune, functionTable *map[s
 	e = e.Next()
 
 	for ; e != nil; e = e.Next() {
+		isQuoted := false
 		if e.Data == "'" {
 			e = e.Next()
+			isQuoted = true
 		}
 		switch e.Data.(type) {
 		case string:
@@ -65,13 +67,17 @@ func and(expression structs.List, symbols *map[string]rune, functionTable *map[s
 				return e.Data, errors.New("Invalid argument")
 			}
 		case structs.List:
-			value, err := ExecInput(e.Data.(structs.List), symbols, functionTable, bindings)
-			if err != nil {
-				return nil, err
-			} else if value == false {
-				return false, nil
-			} else {
-				last = value
+			if isQuoted == true {
+				last = e.Data.(structs.List)
+			} else if (*symbols)[e.Data.(string)] == 'f' || (*symbols)[e.Data.(string)] == 'c' {
+				value, err := ExecInput(e.Data.(structs.List), symbols, functionTable, bindings)
+				if err != nil {
+					return nil, err
+				} else if value == false {
+					return false, nil
+				} else {
+					last = value
+				}
 			}
 		default:
 			if e.Data == false {
