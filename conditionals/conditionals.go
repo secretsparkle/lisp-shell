@@ -53,9 +53,9 @@ func and(expression structs.List, symbols *map[string]rune, functionTable *map[s
 		case string:
 			if value := (*bindings)[e.Data.(string)]; value != "" {
 				last = value
-			} else if e.Data.(string) == "t" {
+			} else if e.Data.(string) == "t" || e.Data.(string) == "T" {
 				last = e.Data
-			} else if e.Data.(string) == "nil" {
+			} else if e.Data.(string) == "nil" || e.Data.(string) == "NIL" {
 				return false, nil
 			} else if util.IsAlphabetic(e.Data.(string)) {
 				return e.Data, errors.New("Unbound symbol, cannot evaluate")
