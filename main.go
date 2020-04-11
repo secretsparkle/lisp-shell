@@ -14,6 +14,7 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 	// should this be global?
 	symbols := map[string]rune{
+		"and":     'c',
 		"car":     'f',
 		"cdr":     'f',
 		"cond":    'c',
@@ -74,7 +75,11 @@ func main() {
 			case float64:
 				fmt.Println(value)
 			case string:
-				fmt.Println(value.(string))
+				if value == "t" {
+					fmt.Println("T")
+				} else {
+					fmt.Println(value.(string))
+				}
 			case structs.List:
 				fmt.Print("(")
 				structs.PrintList(value.(structs.List))

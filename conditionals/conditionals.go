@@ -3,7 +3,9 @@ package conditionals
 import (
 	"../functions"
 	"../structs"
+	"../utils"
 	"errors"
+	//"fmt"
 )
 
 func ExecInput(expression structs.List, symbols *map[string]rune,
@@ -25,12 +27,71 @@ func ExecInput(expression structs.List, symbols *map[string]rune,
 func EvalConditional(expression structs.List, symbols *map[string]rune,
 	functionTable *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
 	switch expression.Head.Data {
+	case "and":
+		result, err := and(expression, symbols, functionTable, bindings)
+		return result, err
 	case "cond":
 	case "if":
 		result, err := if_statement(expression, symbols, functionTable, bindings)
 		return result, err
 	}
 	return nil, nil
+}
+
+func and(expression structs.List, symbols *map[string]rune, functionTable *map[string]structs.Function,
+	bindings *map[string]string) (interface{}, error) {
+	e := expression.Head
+	var last interface{}
+	e = e.Next()
+
+	for ; e != nil; e = e.Next() {
+		isQuoted := false
+		if e.Data == "'" {
+			e = e.Next()
+			isQuoted = true
+		}
+		switch e.Data.(type) {
+		case string:
+			if value := (*bindings)[e.Data.(string)]; value != "" {
+				last = value
+			} else if e.Data.(string) == "t" || e.Data.(string) == "T" {
+				last = e.Data
+			} else if e.Data.(string) == "nil" || e.Data.(string) == "NIL" {
+				return false, nil
+			} else if util.IsAlphabetic(e.Data.(string)) {
+				return e.Data, errors.New("Unbound symbol, cannot evaluate")
+			} else if util.AnySymbol(e.Data.(string)) {
+				return e.Data, errors.New("Cannot evaluate symbolic input")
+			} else if util.IsNumber(e.Data.(string)) {
+				last = e.Data
+			} else {
+				return e.Data, errors.New("Invalid argument")
+			}
+		case structs.List:
+			if isQuoted == true {
+				last = e.Data.(structs.List)
+				continue
+			}
+			l := e.Data.(structs.List)
+			e = l.Head
+			if (*symbols)[e.Data.(string)] == 'f' || (*symbols)[e.Data.(string)] == 'c' {
+				value, err := ExecInput(l, symbols, functionTable, bindings)
+				if err != nil {
+					return nil, err
+				} else if value == false {
+					return false, nil
+				} else {
+					last = value
+				}
+			}
+		default:
+			if e.Data == false {
+				return false, nil
+			}
+			last = e.Data
+		}
+	}
+	return last, nil
 }
 
 func if_statement(expression structs.List, symbols *map[string]rune,
@@ -43,15 +104,24 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 		return nil, err
 	}
 	// must return bool
+	// need to change to use any truthy value
 	switch value.(type) {
 	case bool:
 	default:
-		return nil, errors.New("The if conditional requires a boolean value")
+		value = true
 	}
 
 	e = e.Next()
+	if e.Data == "'" {
+		e = e.Next()
+	}
+	// need switch
 	t := e.Data.(structs.List)
 	e = e.Next()
+	if e.Data == "'" {
+		e = e.Next()
+	}
+	// need switch
 	f := e.Data.(structs.List)
 
 	if value == true {
