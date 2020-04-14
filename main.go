@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./conditionals"
+	"./evaluation"
 	"./parse"
 	"./structs"
 	"./utils"
@@ -14,16 +14,16 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 	// should this be global?
 	symbols := map[string]rune{
-		"and":     'c',
+		"and":     'f',
 		"car":     'f',
 		"cdr":     'f',
-		"cond":    'c',
+		"cond":    'f',
 		"cons":    'f',
 		"defun":   'f',
 		"defvar":  'f',
 		"equal":   'f',
 		"first":   'f',
-		"if":      'c',
+		"if":      'f',
 		"last":    'f',
 		"map":     'f',
 		"quote":   'f',
@@ -61,7 +61,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		// Handle the execution of the input.
-		if value, err = conditionals.ExecInput(s_expressions, &symbols, &functions, &bindings); err != nil {
+		if value, err = evaluation.EvaluateFunction(s_expressions, &symbols, &functions, &bindings); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		if value != nil {

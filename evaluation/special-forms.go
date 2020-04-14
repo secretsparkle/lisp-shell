@@ -1,42 +1,12 @@
-package conditionals
+package evaluation
 
 import (
-	"../functions"
 	"../structs"
 	"../utils"
 	"errors"
-	//"fmt"
+	"strconv"
+	"strings"
 )
-
-func ExecInput(expression structs.List, symbols *map[string]rune,
-	functionTable *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
-
-	// Check for built-in commands
-	switch (*symbols)[expression.Head.Data.(string)] {
-	case 'c':
-		value, err := EvalConditional(expression, symbols, functionTable, bindings)
-		return value, err
-	case 'f':
-		value, err := functions.ExecFunction(expression, symbols, functionTable, bindings)
-		return value, err
-	default:
-		return expression, nil
-	}
-}
-
-func EvalConditional(expression structs.List, symbols *map[string]rune,
-	functionTable *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
-	switch expression.Head.Data {
-	case "and":
-		result, err := and(expression, symbols, functionTable, bindings)
-		return result, err
-	case "cond":
-	case "if":
-		result, err := if_statement(expression, symbols, functionTable, bindings)
-		return result, err
-	}
-	return nil, nil
-}
 
 func and(expression structs.List, symbols *map[string]rune, functionTable *map[string]structs.Function,
 	bindings *map[string]string) (interface{}, error) {
@@ -75,7 +45,7 @@ func and(expression structs.List, symbols *map[string]rune, functionTable *map[s
 			l := e.Data.(structs.List)
 			e = l.Head
 			if (*symbols)[e.Data.(string)] == 'f' || (*symbols)[e.Data.(string)] == 'c' {
-				value, err := ExecInput(l, symbols, functionTable, bindings)
+				value, err := EvaluateFunction(l, symbols, functionTable, bindings)
 				if err != nil {
 					return nil, err
 				} else if value == false {
@@ -96,6 +66,68 @@ func and(expression structs.List, symbols *map[string]rune, functionTable *map[s
 	return last, nil
 }
 
+func defun(expression structs.List, symbols *map[string]rune,
+	functions *map[string]structs.Function) (structs.List, error) {
+	funct := new(structs.Function)
+	e := expression.Head
+	e = e.Next()
+	funct.Name = e.Data.(string)
+	e = e.Next()
+	defunParamHelper(e.Data.(structs.List), funct, symbols, functions)
+	e = e.Next()
+	funct.Body = e.Data.(structs.List)
+
+	(*symbols)[funct.Name] = 'f'
+	(*functions)[funct.Name] = *funct
+
+	return expression, nil
+}
+
+func defunParamHelper(expression structs.List, funct *structs.Function,
+	symbols *map[string]rune, functions *map[string]structs.Function) error {
+	for e := expression.Head; e != nil; e = e.Next() {
+		funct.Args = append(funct.Args, e.Data.(string))
+	}
+
+	return nil
+}
+
+func defvar(expression structs.List, symbols *map[string]rune,
+	functions *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
+	if expression.Len() != 3 {
+		return nil, errors.New("Invalid number of arguments supplied to defvar")
+	}
+	e := expression.Head
+	e = e.Next()
+	symbol := e.Data.(string)
+	e = e.Next()
+	switch e.Data.(type) {
+	case string:
+		value := e.Data.(string)
+		(*bindings)[symbol] = value
+
+		return strings.ToUpper(symbol), nil
+	default:
+		l := e.Data.(structs.List)
+		retVal, err := EvaluateFunction(l, symbols, functions, bindings)
+		if err != nil {
+			return nil, err
+		}
+		switch retVal.(type) {
+		case float64:
+			value := strconv.FormatFloat(retVal.(float64), 'f', 6, 64)
+			(*bindings)[symbol] = value
+			return strings.ToUpper(symbol), nil
+		case string:
+			(*bindings)[symbol] = retVal.(string)
+			return strings.ToUpper(symbol), nil
+		default:
+			return nil, errors.New("For the time being, lists cannot be defined as variable values")
+			//(*bindings)[symbol] = retVal.(structs.List)
+			//return strings.ToUpper(symbol), nil
+		}
+	}
+}
 func if_statement(expression structs.List, symbols *map[string]rune,
 	functionTable *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
 	var condition bool
@@ -137,7 +169,7 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 			condition = true
 			break
 		}
-		_, err := ExecInput(value.(structs.List), symbols, functionTable, bindings)
+		_, err := EvaluateFunction(value.(structs.List), symbols, functionTable, bindings)
 		if err != nil {
 			return nil, err
 		}
@@ -180,7 +212,7 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 				if tQuoted == true {
 					return t, nil
 				}
-				if retVal, err := ExecInput(t.(structs.List), symbols, functionTable, bindings); err == nil {
+				if retVal, err := EvaluateFunction(t.(structs.List), symbols, functionTable, bindings); err == nil {
 					return retVal, nil
 				} else {
 					return nil, err
@@ -227,7 +259,7 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 			if tQuoted == true {
 				return t, nil
 			}
-			if retVal, err := ExecInput(t.(structs.List), symbols, functionTable, bindings); err == nil {
+			if retVal, err := EvaluateFunction(t.(structs.List), symbols, functionTable, bindings); err == nil {
 				return retVal, nil
 			} else {
 				return nil, err
@@ -262,7 +294,7 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 			if fQuoted == true {
 				return f, nil
 			}
-			if retVal, err := ExecInput(f.(structs.List), symbols, functionTable, bindings); err == nil {
+			if retVal, err := EvaluateFunction(f.(structs.List), symbols, functionTable, bindings); err == nil {
 				return retVal, nil
 			} else {
 				return nil, err
