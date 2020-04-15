@@ -18,11 +18,11 @@ func TestAnd(t *testing.T) {
 	expressions, _ = engines.Translate("(and (and 3 t t))")
 	test3, _ := and(expressions, &types, &functions, &bindings)
 
-	//expressions, _ = engines.Translate("(and t)")
-	//test4, _ := and(expressions, &types, &functions, &bindings)
+	expressions, _ = engines.Translate("(and (and 3 t t) t)")
+	test4, _ := and(expressions, &types, &functions, &bindings)
 
-	//expressions, _ = engines.Translate("(and t)")
-	//test5, _ := and(expressions, &types, &functions, &bindings)
+	expressions, _ = engines.Translate("(and (and 3 t t) (and 3 t t))")
+	test5, _ := and(expressions, &types, &functions, &bindings)
 
 	//expressions, _ = engines.Translate("(and t)")
 	//test6, _ := and(expressions, &types, &functions, &bindings)
@@ -35,5 +35,11 @@ func TestAnd(t *testing.T) {
 	}
 	if test3 != "t" {
 		t.Errorf("(and (and 3 t t)) = %v; want t", test3)
+	}
+	if test4 != "t" {
+		t.Errorf("(and (and 3 t t) t) = %v; want t", test4)
+	}
+	if test5 != "t" {
+		t.Errorf("(and (and 3 t t) (and 3 t t)) = %v; want t", test5)
 	}
 }
