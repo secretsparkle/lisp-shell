@@ -2,6 +2,7 @@ package evaluation
 
 import (
 	"../structs"
+	"../utils"
 	"errors"
 	"strconv"
 )
@@ -9,6 +10,10 @@ import (
 func equal(expression structs.List, symbols *map[string]rune,
 	functions *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
 	var a, b interface{}
+
+	if expression.Len() != 3 {
+		return nil, errors.New("Invalid equal expression.")
+	}
 
 	e := expression.Head
 	e = e.Next()
@@ -24,9 +29,18 @@ func equal(expression structs.List, symbols *map[string]rune,
 	case string:
 		if a = (*bindings)[e.Data.(string)]; a != "" {
 			a, _ = strconv.ParseFloat(a.(string), 64)
+		} else if e.Data.(string) == "t" || e.Data.(string) == "T" {
+			a = e.Data
+		} else if e.Data.(string) == "nil" || e.Data.(string) == "NIL" {
+			a = false
+		} else if util.IsAlphabetic(e.Data.(string)) {
+			return e.Data, errors.New("Unbound symbol, cannot evaluate")
+		} else if util.AnySymbol(e.Data.(string)) {
+			return e.Data, errors.New("Cannot evaluate symbolic input")
+		} else if util.IsNumber(e.Data.(string)) {
+			a, _ = strconv.ParseFloat(e.Data.(string), 64)
 		} else {
-			a = e.Data.(string)
-			a, _ = strconv.ParseFloat(a.(string), 64)
+			return e.Data, errors.New("Invalid argument")
 		}
 	case structs.List:
 		d := e
@@ -55,9 +69,18 @@ func equal(expression structs.List, symbols *map[string]rune,
 	case string:
 		if b = (*bindings)[e.Data.(string)]; b != "" {
 			b, _ = strconv.ParseFloat(b.(string), 64)
+		} else if e.Data.(string) == "t" || e.Data.(string) == "T" {
+			b = e.Data
+		} else if e.Data.(string) == "nil" || e.Data.(string) == "NIL" {
+			b = false
+		} else if util.IsAlphabetic(e.Data.(string)) {
+			return e.Data, errors.New("Unbound symbol, cannot evaluate")
+		} else if util.AnySymbol(e.Data.(string)) {
+			return e.Data, errors.New("Cannot evaluate symbolic input")
+		} else if util.IsNumber(e.Data.(string)) {
+			b, _ = strconv.ParseFloat(e.Data.(string), 64)
 		} else {
-			b = e.Data.(string)
-			b, _ = strconv.ParseFloat(b.(string), 64)
+			return e.Data, errors.New("Invalid argument")
 		}
 	case structs.List:
 		l := e.Data.(structs.List)
@@ -120,6 +143,10 @@ func gt_or_lt(expression structs.List, symbols *map[string]rune,
 	var a, b float64
 	var err error
 	var str interface{}
+
+	if expression.Len() != 3 {
+		return nil, errors.New("Invalid number of arguments")
+	}
 
 	e := expression.Head
 	e = e.Next()

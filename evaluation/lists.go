@@ -7,6 +7,10 @@ import (
 
 func car(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
 	bindings *map[string]string) (interface{}, error) {
+
+	if expression.Len() != 2 {
+		return nil, errors.New("Invalid number of arguments")
+	}
 	e := expression.Head
 	e = e.Next()
 	if e.Data == "'" {
@@ -35,6 +39,10 @@ func car(expression structs.List, symbols *map[string]rune, functions *map[strin
 
 func cdr(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
 	bindings *map[string]string) (interface{}, error) {
+
+	if expression.Len() != 2 {
+		return nil, errors.New("Invalid expression length")
+	}
 	e := expression.Head
 	e = e.Next()
 	if e.Data == "'" {
@@ -73,6 +81,9 @@ func cons(expression structs.List, symbols *map[string]rune, functions *map[stri
 	var second structs.List
 	var list structs.List
 
+	if expression.Len() != 3 {
+		return nil, errors.New("Invalid number of arguments")
+	}
 	e := expression.Head
 	e = e.Next()
 	if e.Data == "'" {
@@ -145,6 +156,10 @@ func cons(expression structs.List, symbols *map[string]rune, functions *map[stri
 
 func last(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
 	bindings *map[string]string) (interface{}, error) {
+
+	if expression.Len() != 2 {
+		return nil, errors.New("Invalid number of expressions")
+	}
 	e := expression.Head
 	e = e.Next()
 	switch e.Data.(type) {
@@ -203,6 +218,9 @@ func reverse(expression structs.List, symbols *map[string]rune, functions *map[s
 	bindings *map[string]string) (interface{}, error) {
 	var reversed structs.List
 
+	if expression.Len() != 2 {
+		return nil, errors.New("Invalid number of arguments")
+	}
 	e := expression.Head
 	e = e.Next()
 	if e.Data == "'" {

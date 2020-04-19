@@ -137,6 +137,9 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 	tQuoted := false
 	fQuoted := false
 
+	if expression.Len() != 3 && expression.Len() != 4 {
+		return nil, errors.New("invalid number of arguments")
+	}
 	if e.Data == "'" {
 		e = e.Next()
 		cQuoted = true
@@ -169,11 +172,34 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 			condition = true
 			break
 		}
-		_, err := EvaluateFunction(value.(structs.List), symbols, functionTable, bindings)
+		retVal, err := EvaluateFunction(value.(structs.List), symbols, functionTable, bindings)
 		if err != nil {
 			return nil, err
 		}
-		condition = true
+		switch retVal.(type) {
+		case bool:
+			condition = retVal.(bool)
+		case float64:
+			condition = true
+		case string:
+			if evaluatedSymbol := (*bindings)[retVal.(string)]; evaluatedSymbol != "" {
+				condition = true
+			} else if retVal == "t" || retVal == "T" {
+				condition = true
+			} else if retVal == "nil" || retVal == "NIL" {
+				condition = false
+			} else if util.IsAlphabetic(retVal.(string)) {
+				return retVal, errors.New("Unbound symbol, cannot evaluate")
+			} else if util.AnySymbol(retVal.(string)) {
+				return retVal, errors.New("Cannot evaluate symbolic input")
+			} else if util.IsNumber(retVal.(string)) {
+				condition = true
+			} else {
+				return retVal, errors.New("Invalid argument")
+			}
+		default:
+			condition = true
+		}
 	default:
 		return value, errors.New("Unknown error has occured")
 	}

@@ -37,6 +37,8 @@ func Output(value interface{}) {
 		case string:
 			if value == "t" {
 				fmt.Println("T")
+			} else if value == "nil" {
+				fmt.Println("NIL")
 			} else {
 				fmt.Println(value.(string))
 			}
