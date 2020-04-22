@@ -6,6 +6,7 @@ import (
 	"regexp"
 )
 
+// everything but transliterate needs to be reworked
 func Parse(input string) error {
 	tokens := tokenize(input)
 	if !sExpression(tokens) {

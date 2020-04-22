@@ -1,0 +1,8 @@
+
+(defun plus (num1 num2)
+  (+ num1 num2))
+
+(defun minus (num1 num2)
+  (- num1 num2))
+
+(plus 1 2)

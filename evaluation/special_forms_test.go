@@ -105,3 +105,35 @@ func TestIfStatement(t *testing.T) {
 		}
 	}
 }
+
+func TestInterpret(t *testing.T) {
+	types, functions, bindings := structs.Maps()
+
+	successful_tests := map[string]interface{}{
+		"(interpret file.uv)": nil,
+		"(interpret test.uv)": nil,
+	}
+
+	unsuccessful_tests := map[string]interface{}{
+		"(interpret $test nil)":  nil,
+		"(interpret '(test.uv))": nil,
+		"(interpret file)":       nil,
+		"(interpret new.uv)":     nil,
+	}
+
+	for test, desired := range successful_tests {
+		expression, _ := engines.Translate(test)
+		result, _ := interpret(expression, &types, &functions, &bindings)
+		if result != desired {
+			t.Errorf("%s = %v; want %v", test, result, desired)
+		}
+	}
+
+	for test, undesired := range unsuccessful_tests {
+		expression, _ := engines.Translate(test)
+		_, err := interpret(expression, &types, &functions, &bindings)
+		if err == undesired {
+			t.Errorf("%s triggered %v; want error triggered.", test, err)
+		}
+	}
+}

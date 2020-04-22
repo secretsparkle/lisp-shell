@@ -31,6 +31,8 @@ func EvaluateFunction(expression structs.List, symbols *map[string]rune,
 		return car(expression, symbols, functions, bindings)
 	case "if":
 		return if_statement(expression, symbols, functions, bindings)
+	case "interpret":
+		return interpret(expression, symbols, functions, bindings)
 	case "last":
 		return last(expression, symbols, functions, bindings)
 	case "list":

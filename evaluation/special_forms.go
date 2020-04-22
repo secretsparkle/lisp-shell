@@ -1,9 +1,12 @@
 package evaluation
 
 import (
+	"../engines"
 	"../structs"
 	"../utils"
+	"bufio"
 	"errors"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -329,4 +332,100 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 			return f, errors.New("Unknown error has occured")
 		}
 	}
+}
+
+func interpret(expression structs.List, symbols *map[string]rune,
+	functions *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
+	if expression.Len() != 2 {
+		return nil, errors.New("invalid number of arguments")
+	}
+	var file string
+	e := expression.Head
+	//quoted := false
+	e = e.Next()
+
+	// we need to do something about quote notation...
+	// it's inelegant right now
+	if e.Data == "'" {
+		e = e.Next()
+		//quoted = true
+	}
+	switch e.Data.(type) {
+	case string:
+		file = e.Data.(string)
+		if !strings.HasSuffix(file, ".uv") {
+			return nil, errors.New("invalid file type. only files with the \".uv\" file extension are supported")
+		}
+	case structs.List:
+		return nil, errors.New("strings are currently the only supported argument type")
+		/*
+			if quoted == true {
+				// should this be supported?
+			}
+			l := e.Data.(structs.List)
+			e = l.Head
+			if (*symbols)[e.Data.(string)] == 'f' {
+				_, err := EvaluateFunction(l, symbols, functions, bindings)
+				if err != nil {
+					return nil, err
+				}
+				// check for list or string in retVal
+			}
+		*/
+	default:
+		return nil, errors.New("invalid argument supplied to interpret")
+	}
+
+	source, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(source)
+	scanner.Split(bufio.ScanLines)
+	var expressions [][]string
+	var lines []string
+
+	// check for beginning of expression on lines, then check for the line where it ends
+	// after gathering an expression, remove the newlines
+	var stack []rune
+	for scanner.Scan() {
+		line := scanner.Text()
+		lines = append(lines, line)
+		for _, char := range line {
+			if char == '(' {
+				stack = append(stack, char)
+			} else if char == ')' {
+				stack = stack[:len(stack)-1]
+				if len(stack) == 0 {
+					expressions = append(expressions, lines)
+					lines = nil
+				}
+			}
+		}
+	}
+
+	var s_expressions []string
+	var express string
+	for _, expression := range expressions {
+		for _, line := range expression {
+			express += line
+		}
+		s_expressions = append(s_expressions, express)
+		express = ""
+	}
+
+	for _, expression := range s_expressions {
+		parsed, err := engines.Translate(expression)
+		if err != nil {
+			return nil, err
+		}
+		value, err := EvaluateFunction(parsed, symbols, functions, bindings)
+		if err != nil {
+			return nil, err
+		}
+		engines.Output(value)
+	}
+
+	return nil, nil
 }
