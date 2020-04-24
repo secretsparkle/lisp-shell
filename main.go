@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -15,6 +16,9 @@ func main() {
 	for {
 		fmt.Print("> ")
 		input, err := reader.ReadString('\n')
+		if strings.TrimLeft(input, " ") == ("\n") {
+			continue
+		}
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
