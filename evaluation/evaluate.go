@@ -23,12 +23,6 @@ func EvaluateFunction(expression structs.List, functionList *map[string]rune,
 		return cons(expression, functionList, functions, bindings)
 	case "define":
 		return define(expression, functionList, functions, bindings)
-		/*
-			case "defun":
-				return defun(expression, symbols, functions)
-			case "defvar": // redo for nesting
-				return defvar(expression, symbols, functions, bindings)
-		*/
 	case "equal":
 		return equal(expression, functionList, functions, bindings)
 	case "first":
