@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-func cd(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings *map[string]string) (interface{}, error) {
+func cd(expression structs.List, functionList *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]interface{}) (interface{}, error) {
 	// 'cd' to home dir with empty path not yet supported.
 	if expression.Len() < 2 {
 		return expression, errors.New("path required")
@@ -22,7 +22,7 @@ func cd(expression structs.List, symbols *map[string]rune, functions *map[string
 	case string:
 		dir = e.Data.(string)
 	default:
-		dir, err = EvaluateFunction(e.Data.(structs.List), symbols, functions, bindings)
+		dir, err = EvaluateFunction(e.Data.(structs.List), functionList, functions, bindings)
 		if err != nil {
 			return nil, err
 		}
@@ -31,8 +31,8 @@ func cd(expression structs.List, symbols *map[string]rune, functions *map[string
 	return nil, os.Chdir(dir.(string))
 }
 
-func echo(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings *map[string]string) (interface{}, error) {
+func echo(expression structs.List, functionList *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]interface{}) (interface{}, error) {
 	e := expression.Head
 	e = e.Next()
 	var out []string
@@ -41,7 +41,7 @@ func echo(expression structs.List, symbols *map[string]rune, functions *map[stri
 		case string:
 			out = append(out, e.Data.(string))
 		default:
-			value, err := EvaluateFunction(e.Data.(structs.List), symbols, functions, bindings)
+			value, err := EvaluateFunction(e.Data.(structs.List), functionList, functions, bindings)
 			if err != nil {
 				return nil, err
 			}

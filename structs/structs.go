@@ -4,15 +4,10 @@ import (
 	"fmt"
 )
 
-type Control struct {
-	Args []string
-	Body []string
-}
-
 type Function struct {
 	Name     string
 	Args     []string
-	Bindings map[string]string
+	Bindings map[string]interface{}
 	Body     List
 }
 
@@ -116,7 +111,7 @@ func PrintList(l List) {
 	}
 }
 
-func Maps() (map[string]rune, map[string]Function, map[string]string) {
+func Maps() (map[string]rune, map[string]Function, map[string]interface{}) {
 	symbols := map[string]rune{
 		"and":     'f',
 		"car":     'f',
@@ -142,6 +137,6 @@ func Maps() (map[string]rune, map[string]Function, map[string]string) {
 		">":       'f',
 	}
 	functions := make(map[string]Function)
-	bindings := make(map[string]string)
+	bindings := make(map[string]interface{})
 	return symbols, functions, bindings
 }

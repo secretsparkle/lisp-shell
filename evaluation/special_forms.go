@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-func and(expression structs.List, symbols *map[string]rune, functionTable *map[string]structs.Function,
-	bindings *map[string]string) (interface{}, error) {
+func and(expression structs.List, functionList *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]interface{}) (interface{}, error) {
 	e := expression.Head
 	var last interface{}
 	e = e.Next()
@@ -44,8 +44,8 @@ func and(expression structs.List, symbols *map[string]rune, functionTable *map[s
 			}
 			l := e.Data.(structs.List)
 			e = l.Head
-			if (*symbols)[e.Data.(string)] == 'f' || (*symbols)[e.Data.(string)] == 'c' {
-				value, err := EvaluateFunction(l, symbols, functionTable, bindings)
+			if (*functionList)[e.Data.(string)] == 'f' {
+				value, err := EvaluateFunction(l, functionList, functions, bindings)
 				if err != nil {
 					return nil, err
 				} else if value == false {
@@ -66,6 +66,110 @@ func and(expression structs.List, symbols *map[string]rune, functionTable *map[s
 	return last, nil
 }
 
+func define(expression structs.List, functionList *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]interface{}) (interface{}, error) {
+	if expression.Len() != 3 {
+		return nil, errors.New("invalid number of arguments")
+	}
+	var symbol string
+	quoted := false
+	e := expression.Head
+	e = e.Next()
+
+	switch e.Data.(type) {
+	case string:
+		if util.IsValidSymbol(e.Data.(string)) {
+			if (*bindings)[symbol] != nil {
+				return nil, errors.New("symbol has already been defined")
+			}
+			symbol = e.Data.(string)
+		} else {
+			return e.Data, errors.New("invalid starting character on symbol")
+		}
+		e = e.Next()
+		if e.Data == "'" {
+			quoted = true
+			e = e.Next()
+		}
+		switch e.Data.(type) {
+		case string:
+			// should probably get rid of this else if tree
+			// any string should be valid as a symbol
+			// although numbers should be converted
+			value := e.Data.(string)
+			if quoted == true {
+				(*bindings)[symbol] = value
+				return strings.ToUpper(symbol), nil
+			} else if util.IsNumber(value) {
+				(*bindings)[symbol], _ = strconv.ParseFloat(value, 64)
+				return strings.ToUpper(symbol), nil
+			} else {
+				(*bindings)[symbol] = value
+				return strings.ToUpper(symbol), nil
+			}
+		case structs.List:
+			value := e.Data.(structs.List)
+			if quoted == true {
+				(*bindings)[symbol] = value
+				return strings.ToUpper(symbol), nil
+			}
+			l := e.Data.(structs.List)
+			e = l.Head
+			if (*functionList)[e.Data.(string)] == 'f' {
+				retVal, err := EvaluateFunction(l, functionList, functions, bindings)
+				if err != nil {
+					return nil, err
+				}
+				switch retVal.(type) {
+				case float64:
+					(*bindings)[symbol] = retVal
+					return strings.ToUpper(symbol), nil
+				case string:
+					(*bindings)[symbol] = retVal
+					return strings.ToUpper(symbol), nil
+				case structs.List:
+					(*bindings)[symbol] = retVal
+					return strings.ToUpper(symbol), nil
+				}
+			} else {
+				return nil, errors.New("invalid function call")
+			}
+		default:
+			return e.Data, errors.New("cannot parse this value as a symbol")
+		}
+	case structs.List:
+		// congrats, its a function
+		funct := new(structs.Function)
+		symbol := e.Data.(structs.List)
+		f := symbol.Head
+		funct.Name = f.Data.(string)
+		f = f.Next()
+		// for loop for function arguments
+		for ; f != nil; f = f.Next() {
+			funct.Args = append(funct.Args, f.Data.(string))
+		}
+		// move to function body
+		e = e.Next()
+		switch e.Data.(type) {
+		case structs.List:
+			// this list needs to be parsed to ensure it is a valid form
+			// but this will be a future addition, when I determine what that
+			// form will be
+			funct.Body = e.Data.(structs.List)
+		default:
+			return e.Data, errors.New("invalid function type")
+		}
+		(*functionList)[funct.Name] = 'f'
+		(*functions)[funct.Name] = *funct
+		return strings.ToUpper(funct.Name), nil
+	default:
+		return nil, errors.New("invalid argument supplied to define")
+	}
+
+	return nil, nil
+}
+
+/*
 func defun(expression structs.List, symbols *map[string]rune,
 	functions *map[string]structs.Function) (structs.List, error) {
 	funct := new(structs.Function)
@@ -128,8 +232,9 @@ func defvar(expression structs.List, symbols *map[string]rune,
 		}
 	}
 }
-func if_statement(expression structs.List, symbols *map[string]rune,
-	functionTable *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
+*/
+func if_statement(expression structs.List, functionList *map[string]rune,
+	functions *map[string]structs.Function, bindings *map[string]interface{}) (interface{}, error) {
 	var condition bool
 	e := expression.Head
 	e = e.Next()
@@ -172,7 +277,7 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 			condition = true
 			break
 		}
-		retVal, err := EvaluateFunction(value.(structs.List), symbols, functionTable, bindings)
+		retVal, err := EvaluateFunction(value.(structs.List), functionList, functions, bindings)
 		if err != nil {
 			return nil, err
 		}
@@ -238,7 +343,7 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 				if tQuoted == true {
 					return t, nil
 				}
-				if retVal, err := EvaluateFunction(t.(structs.List), symbols, functionTable, bindings); err == nil {
+				if retVal, err := EvaluateFunction(t.(structs.List), functionList, functions, bindings); err == nil {
 					return retVal, nil
 				} else {
 					return nil, err
@@ -285,7 +390,7 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 			if tQuoted == true {
 				return t, nil
 			}
-			if retVal, err := EvaluateFunction(t.(structs.List), symbols, functionTable, bindings); err == nil {
+			if retVal, err := EvaluateFunction(t.(structs.List), functionList, functions, bindings); err == nil {
 				return retVal, nil
 			} else {
 				return nil, err
@@ -320,7 +425,7 @@ func if_statement(expression structs.List, symbols *map[string]rune,
 			if fQuoted == true {
 				return f, nil
 			}
-			if retVal, err := EvaluateFunction(f.(structs.List), symbols, functionTable, bindings); err == nil {
+			if retVal, err := EvaluateFunction(f.(structs.List), functionList, functions, bindings); err == nil {
 				return retVal, nil
 			} else {
 				return nil, err

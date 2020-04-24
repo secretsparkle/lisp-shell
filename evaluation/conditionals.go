@@ -7,8 +7,8 @@ import (
 	"strconv"
 )
 
-func equal(expression structs.List, symbols *map[string]rune,
-	functions *map[string]structs.Function, bindings *map[string]string) (interface{}, error) {
+func equal(expression structs.List, functionList *map[string]rune,
+	functions *map[string]structs.Function, bindings *map[string]interface{}) (interface{}, error) {
 	var a, b interface{}
 
 	if expression.Len() != 3 {
@@ -46,8 +46,8 @@ func equal(expression structs.List, symbols *map[string]rune,
 		d := e
 		l := e.Data.(structs.List)
 		e = l.Head
-		if (*symbols)[e.Data.(string)] == 'f' {
-			retVal, err := EvaluateFunction(l, symbols, functions, bindings)
+		if (*functionList)[e.Data.(string)] == 'f' {
+			retVal, err := EvaluateFunction(l, functionList, functions, bindings)
 			if err != nil {
 				return nil, err
 			}
@@ -85,8 +85,8 @@ func equal(expression structs.List, symbols *map[string]rune,
 	case structs.List:
 		l := e.Data.(structs.List)
 		e = l.Head
-		if (*symbols)[e.Data.(string)] == 'f' {
-			retVal, err := EvaluateFunction(l, symbols, functions, bindings)
+		if (*functionList)[e.Data.(string)] == 'f' {
+			retVal, err := EvaluateFunction(l, functionList, functions, bindings)
 			if err != nil {
 				return nil, err
 			}
@@ -138,8 +138,8 @@ func equal(expression structs.List, symbols *map[string]rune,
 	}
 }
 
-func gt_or_lt(expression structs.List, symbols *map[string]rune,
-	functions *map[string]structs.Function, bindings *map[string]string, fun string) (interface{}, error) {
+func gt_or_lt(expression structs.List, functionList *map[string]rune,
+	functions *map[string]structs.Function, bindings *map[string]interface{}, fun string) (interface{}, error) {
 	var a, b float64
 	var err error
 	var str interface{}
@@ -172,8 +172,8 @@ func gt_or_lt(expression structs.List, symbols *map[string]rune,
 		d := e
 		l := e.Data.(structs.List)
 		e = l.Head
-		if (*symbols)[e.Data.(string)] == 'f' {
-			retVal, err := EvaluateFunction(l, symbols, functions, bindings)
+		if (*functionList)[e.Data.(string)] == 'f' {
+			retVal, err := EvaluateFunction(l, functionList, functions, bindings)
 			if err != nil {
 				return nil, err
 			}
@@ -208,8 +208,8 @@ func gt_or_lt(expression structs.List, symbols *map[string]rune,
 		d := e
 		l := e.Data.(structs.List)
 		e = l.Head
-		if (*symbols)[e.Data.(string)] == 'f' {
-			retVal, err := EvaluateFunction(l, symbols, functions, bindings)
+		if (*functionList)[e.Data.(string)] == 'f' {
+			retVal, err := EvaluateFunction(l, functionList, functions, bindings)
 			if err != nil {
 				return nil, err
 			}

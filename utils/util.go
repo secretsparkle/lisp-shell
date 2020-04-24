@@ -66,3 +66,30 @@ func AnySymbol(s string) bool {
 	}
 	return false
 }
+
+func IsValidSymbol(s string) bool {
+	// this should be a set but I was lazy and did more work
+	illegalStartChars := map[byte]bool{
+		'#':  true,
+		',':  true,
+		'(':  true,
+		')':  true,
+		'{':  true,
+		'}':  true,
+		'[':  true,
+		']':  true,
+		'!':  true,
+		'@':  true,
+		'%':  true,
+		'^':  true,
+		'&':  true,
+		'/':  true,
+		'\\': true,
+		'\'': true,
+		'`':  true,
+	}
+	if illegalStartChars[s[0]] == true {
+		return false
+	}
+	return true
+}

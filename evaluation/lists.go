@@ -5,8 +5,8 @@ import (
 	"errors"
 )
 
-func car(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings *map[string]string) (interface{}, error) {
+func car(expression structs.List, functionList *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]interface{}) (interface{}, error) {
 
 	if expression.Len() != 2 {
 		return nil, errors.New("Invalid number of arguments")
@@ -26,8 +26,8 @@ func car(expression structs.List, symbols *map[string]rune, functions *map[strin
 			e = e.Next()
 		} else if e.Data == "'" {
 			e = e.Next()
-		} else if (*symbols)[e.Data.(string)] == 'f' {
-			retVal, err := EvaluateFunction(l, symbols, functions, bindings)
+		} else if (*functionList)[e.Data.(string)] == 'f' {
+			retVal, err := EvaluateFunction(l, functionList, functions, bindings)
 			if err != nil {
 				return nil, err
 			}
@@ -37,8 +37,8 @@ func car(expression structs.List, symbols *map[string]rune, functions *map[strin
 	}
 }
 
-func cdr(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings *map[string]string) (interface{}, error) {
+func cdr(expression structs.List, functionList *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]interface{}) (interface{}, error) {
 
 	if expression.Len() != 2 {
 		return nil, errors.New("Invalid expression length")
@@ -59,8 +59,8 @@ func cdr(expression structs.List, symbols *map[string]rune, functions *map[strin
 			e = e.Next()
 		} else if e.Data == "'" {
 			e = e.Next()
-		} else if (*symbols)[e.Data.(string)] == 'f' {
-			retVal, err := EvaluateFunction(l, symbols, functions, bindings)
+		} else if (*functionList)[e.Data.(string)] == 'f' {
+			retVal, err := EvaluateFunction(l, functionList, functions, bindings)
 			if err != nil {
 				return nil, err
 			}
@@ -75,8 +75,8 @@ func cdr(expression structs.List, symbols *map[string]rune, functions *map[strin
 	}
 }
 
-func cons(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings *map[string]string) (interface{}, error) {
+func cons(expression structs.List, functionList *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]interface{}) (interface{}, error) {
 	var first structs.List
 	var second structs.List
 	var list structs.List
@@ -103,8 +103,8 @@ func cons(expression structs.List, symbols *map[string]rune, functions *map[stri
 		if e.Data == "'" {
 			e = e.Next()
 		}
-		if (*symbols)[e.Data.(string)] == 'f' {
-			value, err := EvaluateFunction(l, symbols, functions, bindings)
+		if (*functionList)[e.Data.(string)] == 'f' {
+			value, err := EvaluateFunction(l, functionList, functions, bindings)
 			if err != nil {
 				return nil, err
 			}
@@ -136,8 +136,8 @@ func cons(expression structs.List, symbols *map[string]rune, functions *map[stri
 		if e.Data == "'" {
 			e = e.Next()
 		}
-		if (*symbols)[e.Data.(string)] == 'f' {
-			value, err := EvaluateFunction(l, symbols, functions, bindings)
+		if (*functionList)[e.Data.(string)] == 'f' {
+			value, err := EvaluateFunction(l, functionList, functions, bindings)
 			if err != nil {
 				return nil, err
 			}
@@ -154,8 +154,8 @@ func cons(expression structs.List, symbols *map[string]rune, functions *map[stri
 	return list, nil
 }
 
-func last(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings *map[string]string) (interface{}, error) {
+func last(expression structs.List, functionList *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]interface{}) (interface{}, error) {
 
 	if expression.Len() != 2 {
 		return nil, errors.New("Invalid number of expressions")
@@ -177,8 +177,8 @@ func last(expression structs.List, symbols *map[string]rune, functions *map[stri
 		e = l.Head
 		if e.Data == "list" {
 			e = l.Tail
-		} else if (*symbols)[e.Data.(string)] == 'f' {
-			retVal, err := EvaluateFunction(l, symbols, functions, bindings)
+		} else if (*functionList)[e.Data.(string)] == 'f' {
+			retVal, err := EvaluateFunction(l, functionList, functions, bindings)
 			if err != nil {
 				return nil, err
 			}
@@ -214,8 +214,8 @@ func list(expression structs.List) (structs.List, error) {
 	return newList, nil
 }
 
-func reverse(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings *map[string]string) (interface{}, error) {
+func reverse(expression structs.List, functionList *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]interface{}) (interface{}, error) {
 	var reversed structs.List
 
 	if expression.Len() != 2 {
@@ -232,8 +232,8 @@ func reverse(expression structs.List, symbols *map[string]rune, functions *map[s
 		e = retVal.Head
 		if e.Data == "list" {
 			e = retVal.Head.Next()
-		} else if (*symbols)[e.Data.(string)] == 'f' {
-			l, err := EvaluateFunction(retVal, symbols, functions, bindings)
+		} else if (*functionList)[e.Data.(string)] == 'f' {
+			l, err := EvaluateFunction(retVal, functionList, functions, bindings)
 			if err != nil {
 				return nil, err
 			}

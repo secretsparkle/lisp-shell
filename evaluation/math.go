@@ -6,8 +6,8 @@ import (
 	"strconv"
 )
 
-func plus(expression structs.List, symbols *map[string]rune,
-	functions *map[string]structs.Function, bindings *map[string]string) (float64, error) {
+func plus(expression structs.List, functionList *map[string]rune,
+	functions *map[string]structs.Function, bindings *map[string]interface{}) (float64, error) {
 	if expression.Len() == 1 {
 		return 0.0, errors.New("Invalid number of arguments.")
 	}
@@ -27,7 +27,7 @@ func plus(expression structs.List, symbols *map[string]rune,
 				return 0.0, err
 			}
 		default:
-			subValue, err := EvaluateFunction(e.Data.(structs.List), symbols, functions, bindings)
+			subValue, err := EvaluateFunction(e.Data.(structs.List), functionList, functions, bindings)
 			if err != nil {
 				return 0.0, err
 			}
@@ -37,8 +37,8 @@ func plus(expression structs.List, symbols *map[string]rune,
 	return sum, nil
 }
 
-func minus(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings *map[string]string) (float64, error) {
+func minus(expression structs.List, functionList *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]interface{}) (float64, error) {
 	var number string
 	var difference float64
 	var num_expr int
@@ -49,7 +49,8 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 	if expression.Len() == 1 {
 		return 0.0, errors.New("Invalid number of arguments.")
 	} else if expression.Len() == 2 {
-		number = (*bindings)[e.Data.(string)]
+		// I can rewrite these now because I can assert that they have to be numbers
+		number = (*bindings)[e.Data.(string)].(string)
 		if number == "" {
 			number = e.Data.(string)
 		}
@@ -65,7 +66,7 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 			switch e.Data.(type) {
 			case string:
 				if num_expr == 1 {
-					number = (*bindings)[e.Data.(string)]
+					number = (*bindings)[e.Data.(string)].(string)
 					if number == "" {
 						difference, err = strconv.ParseFloat(e.Data.(string), 64)
 						continue
@@ -77,7 +78,7 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 				if err != nil {
 					return 0.0, err
 				}
-				number = (*bindings)[e.Data.(string)]
+				number = (*bindings)[e.Data.(string)].(string)
 				if number == "" {
 					if num, err := strconv.ParseFloat(e.Data.(string), 64); err == nil {
 						difference -= num
@@ -92,7 +93,7 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 					}
 				}
 			default:
-				subValue, err := EvaluateFunction(e.Data.(structs.List), symbols, functions, bindings)
+				subValue, err := EvaluateFunction(e.Data.(structs.List), functionList, functions, bindings)
 				if err != nil {
 					return 0.0, err
 				}
@@ -107,8 +108,8 @@ func minus(expression structs.List, symbols *map[string]rune, functions *map[str
 		return difference, nil
 	}
 }
-func times(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings *map[string]string) (float64, error) {
+func times(expression structs.List, functionList *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]interface{}) (float64, error) {
 	if expression.Len() == 1 {
 		return 0.0, errors.New("Invalid number of arguments.")
 	}
@@ -118,7 +119,7 @@ func times(expression structs.List, symbols *map[string]rune, functions *map[str
 	for e = e.Next(); e != nil; e = e.Next() {
 		switch e.Data.(type) {
 		case string:
-			number = (*bindings)[e.Data.(string)]
+			number = (*bindings)[e.Data.(string)].(string)
 			if number == "" {
 				if num, err := strconv.ParseFloat(e.Data.(string), 64); err == nil {
 					product *= num
@@ -133,7 +134,7 @@ func times(expression structs.List, symbols *map[string]rune, functions *map[str
 				}
 			}
 		default:
-			subValue, err := EvaluateFunction(e.Data.(structs.List), symbols, functions, bindings)
+			subValue, err := EvaluateFunction(e.Data.(structs.List), functionList, functions, bindings)
 			if err != nil {
 				return 0.0, err
 			}
@@ -143,8 +144,8 @@ func times(expression structs.List, symbols *map[string]rune, functions *map[str
 	return product, nil
 }
 
-func divide(expression structs.List, symbols *map[string]rune, functions *map[string]structs.Function,
-	bindings *map[string]string) (float64, error) {
+func divide(expression structs.List, functionList *map[string]rune, functions *map[string]structs.Function,
+	bindings *map[string]interface{}) (float64, error) {
 	var numerator float64
 	var err error
 	numExpr := 0
@@ -158,7 +159,7 @@ func divide(expression structs.List, symbols *map[string]rune, functions *map[st
 		numExpr++
 		switch e.Data.(type) {
 		case string:
-			numStr := (*bindings)[e.Data.(string)]
+			numStr := (*bindings)[e.Data.(string)].(string)
 			if numStr != "" && numExpr == 1 {
 				if numerator, err = strconv.ParseFloat(numStr, 64); err == nil {
 					continue
@@ -172,7 +173,7 @@ func divide(expression structs.List, symbols *map[string]rune, functions *map[st
 					return 0.0, err
 				}
 			}
-			if number := (*bindings)[e.Data.(string)]; number != "" {
+			if number := (*bindings)[e.Data.(string)].(string); number != "" {
 				if num, err := strconv.ParseFloat(number, 64); err == nil {
 					if num == 0 {
 						return 0.0, errors.New("Cannot divide by zero")
@@ -192,7 +193,7 @@ func divide(expression structs.List, symbols *map[string]rune, functions *map[st
 				}
 			}
 		default:
-			subValue, err := EvaluateFunction(e.Data.(structs.List), symbols, functions, bindings)
+			subValue, err := EvaluateFunction(e.Data.(structs.List), functionList, functions, bindings)
 			if err != nil {
 				return 0.0, err
 			}
